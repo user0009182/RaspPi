@@ -3,7 +3,7 @@
 This repository contains the following:
 - [A .NET command server for control of multiple remotely deployed devices](./Server/README.md) 
   - supports sending a command to a remote device such as `set led on` which will turn on its onboard LED.
-- [Micropython scripts](./Device/README.md) Micropython scripts that run on a  [Raspberry Pi Pico W](https://www.raspberrypi.com/documentation/microcontrollers/raspberry-pi-pico.html)
+- [Micropython scripts](./Device/README.md) that run on a  [Raspberry Pi Pico W](https://www.raspberrypi.com/documentation/microcontrollers/raspberry-pi-pico.html)
   - scripts that enable a Pico W to connect to the command server and receive commands
   - scripts that enable support for specific sensors attached to a Raspberry Pi Pico W
 
