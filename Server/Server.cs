@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading.Tasks;
@@ -23,11 +24,22 @@ namespace Server
         internal List<string> GetConnectedDevices()
         {
             var ret = new List<string>();
-            foreach (var clientHandler in connectedClients)
+            lock(connectedClients)
             {
-                ret.Add(clientHandler.RemoteEndpoint.ToString());
+                foreach (var clientHandler in connectedClients)
+                {
+                    ret.Add(clientHandler.RemoteEndpoint.ToString());
+                }
             }
             return ret;
+        }
+
+        internal ClientHandler GetDevice(string ip)
+        {
+            lock(connectedClients)
+            {
+                return connectedClients.FirstOrDefault(c => c.RemoteEndpoint.ToString() == ip);
+            }
         }
 
         public void Start(int listenPort)
@@ -49,12 +61,17 @@ namespace Server
             {
                 connectedClients.Remove(clientHandler);
             }
-            Console.WriteLine("device deregistered");
+            Debug.WriteLine("device deregistered");
         }
 
-        internal string SendCommand(string command)
+        internal string SendCommand(string ip, string command)
         {
-            var client = GetClient(0);
+            var client = GetDevice(ip);
+            if (client == null)
+            {
+                Console.WriteLine($"Bound device {ip} is not connected");
+                return null;
+            }
             return client.EnqueueCommand(command);
         }
 

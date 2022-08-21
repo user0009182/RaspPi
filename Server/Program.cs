@@ -7,6 +7,7 @@ namespace Server
 {
     class Program
     {
+        static string boundIp;
         static void Main(string[] args)
         {
             var server = new Server();
@@ -14,23 +15,61 @@ namespace Server
 
             while (true)
             {
-                var command = Console.ReadLine();
-                if (command == "list")
-                {
-                    ListDevices(server);
-                    continue;
-                }
+                var command = Console.ReadLine().ToLower();
+                ProcessCommand(server, command);
+            }
+        }
 
-                var response = server.SendCommand(command);
-                if (response == null)
+        static bool ProcessCommand(Server server, string command)
+        {
+            if (command == "list")
+            {
+                ListDevices(server);
+                return true;
+            }
+            if (command.StartsWith("bind "))
+            {
+                var parts = command.Split(' ');
+                var ip = parts[1];
+                var device = server.GetDevice(ip);
+                if (device != null)
                 {
-                    Console.WriteLine("no response");
+                    boundIp = ip;
+                    Console.WriteLine("Bound to " + boundIp);
                 }
                 else
                 {
-                    Console.WriteLine(response);
+                    Console.WriteLine("Device " + ip + " not found");
                 }
+                return true;
             }
+            if (boundIp == null)
+            {
+                Console.WriteLine("Not bound to a device");
+                return true;
+            }
+            var response = server.SendCommand(boundIp, command);
+            if (response == null)
+            {
+                Console.WriteLine("no response");
+                return true;
+            }
+            else
+            {
+                if (command == "?")
+                {
+                    var supportedCommands=response.Split(",");
+                    Console.WriteLine("Commands supported by bound device:");
+                    foreach (var c in supportedCommands)
+                    {
+                        Console.WriteLine(c);
+                    }
+                    return true;
+                }
+                Console.WriteLine(response);
+                return true;
+            }
+            return false;
         }
 
         static void ListDevices(Server server)

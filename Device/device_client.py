@@ -12,6 +12,7 @@ class Client:
         self.led_in = machine.Pin("LED", machine.Pin.IN)
         self.__socket = None
         self.command_handler = None
+        self.extra_command_list = None
 
     def obf(self, byte_data):
         mask = b'abcdefg'
@@ -101,7 +102,6 @@ class Client:
         if not self.command_handler == None:
             return self.command_handler(command)
         return False
-
     def command_loop(self):
         while True:
             command=self.receiveStringData()
@@ -109,6 +109,13 @@ class Client:
                 self.sendStringData("pong")
             elif command == "shutdown":
                 break
+            elif command == "?":
+                command_list = "ping,shutdown,set led off,set led on"
+                if not self.extra_command_list == None:
+                    str=",".join(self.extra_command_list)
+                    if len(str) > 0:
+                        command_list += "," + str
+                self.sendStringData(command_list)
             elif command == "get led":
                 aa = str(self.led_in.value())
                 self.sendStringData(aa)
