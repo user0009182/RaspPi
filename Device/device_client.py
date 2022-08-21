@@ -7,6 +7,8 @@ import sys
 
 #Device client class
 class Client:
+    __max_recv_length = 64
+
     def __init__(self):
         self.led_out = machine.Pin("LED", machine.Pin.OUT)
         self.led_in = machine.Pin("LED", machine.Pin.IN)
@@ -61,11 +63,16 @@ class Client:
     def receiveData(self):
         dataLength = self.__socket.recv(2)
         length = int.from_bytes(dataLength, "little")
+        if length > 64:
+            print("receive length {} exceeds __max_recv_length {}".format(length, self.__max_recv_length))
+            return None
         data = self.__socket.recv(length)
         return data
 
     def receiveStringData(self):
         data = self.receiveData()
+        if data == None:
+            return None
         str=data.decode("ascii")
         print("received " + str)
         return str
@@ -92,11 +99,14 @@ class Client:
 
     def connect_handshake(self):
         self.sendStringData("device")
-        strData=self.receiveStringData()
-        print("received " + strData)
-        if strData == "server":
+        str_data=self.receiveStringData()
+        if str_data == None:
+            print("connect_handshake failed")
+            return False
+        print("received " + str_data)
+        if str_data == "server":
             self.sendStringData("ok")
-        print(str(self.led_in.value()))
+        return True
 
     def process_command(self, command):
         if not self.command_handler == None:
@@ -105,6 +115,9 @@ class Client:
     def command_loop(self):
         while True:
             command=self.receiveStringData()
+            if command == None:
+                #error occured reading command
+                break
             if command == "ping":
                 self.sendStringData("pong")
             elif command == "shutdown":
@@ -139,8 +152,9 @@ class Client:
         self.led_out.off()
         self.connectToServer(server_ip_address, server_port)
         self.led_out.on()
-        self.connect_handshake()
-        self.command_loop()
+        connected = self.connect_handshake()
+        if connected:
+            self.command_loop()
         print("shutting down")
         utime.sleep(3)
         self.__socket.close()

@@ -15,6 +15,7 @@ namespace Server
 
             while (true)
             {
+                Console.Write("> ");
                 var command = Console.ReadLine().ToLower();
                 ProcessCommand(server, command);
             }
