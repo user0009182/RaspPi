@@ -1,6 +1,6 @@
 ## Command Server
 
-Simple TCP server that Rasp Pi Pico W devices running device_client.py can connect to over WIFI. Such devices will then be controllable from the server, which can issue commands to them.
+TCP server that devices following the client protocol can connect to over WIFI. Such devices can then be controlled from the server, which can issue commands to them.
 
 Currently the server should be run from Visual Studio under the debugger. This is because a lot of operational output is sent to the debug console. Standard output and input are reserved for sending commands and reading the response.
 
