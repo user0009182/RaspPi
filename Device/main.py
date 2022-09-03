@@ -3,12 +3,12 @@ import hc_sr04
 
 def command_handler(command):
     if command == "get_distance":
-        distance = hc_sr04.read_distance_m(pinEcho, pinTrig)
+        distance = distance_sensor.read_distance_m(1000)
         client.sendStringData(str(distance))
         return True
     return False
 
-(pinEcho, pinTrig) = hc_sr04.hc_sr04_setup(14, 15)
+distance_sensor = hc_sr04.Hc_sr04(15, 14)
 client = device_client.Client()
 client.command_handler = command_handler
 client.extra_command_list = ['get_distance', 'cmd2']

@@ -4,10 +4,11 @@ import network
 import socket
 import time
 import sys
-from hc_sr04 import hc_sr04_setup, read_distance_m
-(pinEcho, pinTrig) = hc_sr04_setup(14, 15)
+import hc_sr04
+
+distance_sensor1 = hc_sr04.Hc_sr04(15, 14)
 start = time.time()
 for i in range(200):
-    dist_m = read_distance_m(pinEcho, pinTrig)
-    print(dist_m)
-    time.sleep(0.1)
+    dist_m = distance_sensor1.read_distance_m(2000)
+    print(str(i) + " " + str(dist_m) + "m")
+    time.sleep(0.2)
