@@ -1,5 +1,10 @@
 ## Raspberry Pi Pico W
 
+This repository contains code to set up a command server for multiple raspberry pi pico W devices. Devices connect to a central server. A terminal can be connected ot the server and commands and responses relayed to and from devices.
+
+![GitHub Logo](/arch.png)
+Format: ![Alt Text](url)
+
 This repository contains the following:
 - [A .NET based TCP server that can remotely control multiple deployed devices](./Server/README.md) 
   - supports sending a command to a remote device such as `set led on` which will turn on its onboard LED.
