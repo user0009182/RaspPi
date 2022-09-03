@@ -109,8 +109,11 @@ class Client:
         return True
 
     def process_command(self, command):
-        if not self.command_handler == None:
-            return self.command_handler(command)
+        try:
+            if not self.command_handler == None:
+                return self.command_handler(command)
+        except:
+            print("error in command_handler")
         return False
     def command_loop(self):
         while True:
