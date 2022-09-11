@@ -12,6 +12,7 @@ class Client:
     def __init__(self):
         self.led_out = machine.Pin("LED", machine.Pin.OUT)
         self.led_in = machine.Pin("LED", machine.Pin.IN)
+        self.sensor_temp = machine.ADC(4)
         self.__socket = None
         self.command_handler = None
         self.extra_command_list = None
@@ -77,6 +78,12 @@ class Client:
         print("received " + str)
         return str
 
+    def readTemperature(self):
+        reading = self.sensor_temp.read_u16()
+        v = reading * 3.3 / 65535
+        temperature = 27 - (v - 0.706) / 0.001721
+        return temperature
+
     def connectToServer(self, ip, port):
         addr = socket.getaddrinfo(ip, port)[0][-1]
         retryInterval=1
@@ -141,11 +148,13 @@ class Client:
             elif command == "set led on":
                 self.led_out.on()
                 self.sendStringData("ok")
+            elif command == "get temp":
+                reading = self.readTemperature()
+                self.sendStringData(str(reading))
             else:
                 processed = self.process_command(command)
                 if not processed:
                     self.sendStringData("unknown command {}".format(command))
-                
 
     def start(self, server_ip_address, server_port):
         self.led_out.off()
