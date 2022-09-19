@@ -11,7 +11,10 @@ import math
 joystick = Joystick(0,1)
 pin = Pin(0, Pin.OUT)
 np = NeoPixel(pin, 16)
+np[0] = (10, 10, 10)
+np.write()
 led_prev=0
+print("Go")
 for i in range(200):
     (angle, magnitude) = joystick.readAngle()
     np[led_prev] = (0, 0, 0)
