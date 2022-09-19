@@ -1,4 +1,4 @@
-## Centralized remote control of multiple Raspberry Pi Pico W devices
+## Remote control of multiple Raspberry Pi Pico W devices
 
 This repository contains a work in progress client and server that can be used to set up a network of raspberry pi pico W devices which can be controlled remotely from a central point. Each device can have its own attached hardware and provide commands to drive the hardware. A terminal can be connected to the server and commands and responses relayed to and from devices.
 
