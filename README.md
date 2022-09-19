@@ -5,6 +5,7 @@ Each folder contains a project using a Raspberry Pi Pico W:
 - read_joystick. This project hooks up a joystick to the Raspberry Pi and reads the joystick x & y values, printing them to the screen
 - neopixel_ring. Cycles the LEDs around an attached neopixel ring.
 - joystick_neopixel. Drives an LED on a neopixel ring based on the direction of an attached joystick.
+- hc_sr04_read_distance. Takes a distance reading from a connected hc_sr04 sonar sensor.
 - onboard_temperature. Reads the onboard temperature, converting it to celcius and displaying it.
 - command_server. Enables a pico W to be controlled by a remote control server over wifi. A command server is implemented in .Net.
 
