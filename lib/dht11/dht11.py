@@ -16,17 +16,17 @@ class Dht11:
         utime.sleep_ms(18)
         self._pin.init(Pin.IN, Pin.PULL_UP)
 
-        data = self.read_data()
+        data = self.__read_data()
         if len(data) < 80:
             return None
         data = data[len(data)-80:]
-        bits = self.get_bits_from_intervals(data)
+        bits = self.__get_bits_from_intervals(data)
         if len(bits) != 40:
             print("error: expected 40 bits, received {}".format(len(bits)))
             return None
 
-        bytes = self.get_bytes_from_bits(bits)
-        if not self.verify_checksum(bytes):
+        bytes = self.__get_bytes_from_bits(bits)
+        if not self.__verify_checksum(bytes):
             print("invalid checksum")
             return None
         humidity=bytes[0]
@@ -34,7 +34,7 @@ class Dht11:
         return (temp, humidity)
 
     @micropython.native
-    def read_data(self):
+    def __read_data(self):
         last=utime.ticks_us()
         next_value=0
         intervals = []
@@ -51,7 +51,7 @@ class Dht11:
                 break
         return intervals
 
-    def get_bits_from_intervals(self, data):
+    def __get_bits_from_intervals(self, data):
         bits=[]
         for i in range(0, 80, 2):
             if data[i] < 35:
@@ -60,7 +60,7 @@ class Dht11:
                 bits.append(1)
         return bits
     
-    def get_bytes_from_bits(self, bits):
+    def __get_bytes_from_bits(self, bits):
         bytes=[]
         for i in range(5):
             bytes.append(0)
@@ -69,7 +69,7 @@ class Dht11:
                 bytes[i] += (bit << j)
         return bytes
 
-    def verify_checksum(self, bytes):
+    def __verify_checksum(self, bytes):
         total = (bytes[0]+bytes[1]+bytes[2]+bytes[3])%256
         parity=bytes[4]
         return total == parity
