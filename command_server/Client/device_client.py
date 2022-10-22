@@ -53,9 +53,7 @@ class Client:
 
     def sendStringData(self, str):
         data = bytes(str, 'ascii')
-        print(data)
         length = len(data)
-        print(length)
         lengthBytes = length.to_bytes(2, "little")
         self.__socket.write(lengthBytes)
         n = self.__socket.write(data)
@@ -119,8 +117,8 @@ class Client:
         try:
             if not self.command_handler == None:
                 return self.command_handler(command)
-        except:
-            print("error in command_handler")
+        except Exception as e:
+            print("error in command_handler - {}".format(e))
         return False
     def command_loop(self):
         while True:

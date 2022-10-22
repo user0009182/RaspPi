@@ -7,7 +7,7 @@ namespace Server
 {
     class Program
     {
-        static string boundIp;
+        static int boundSessionId=-1;
         static void Main(string[] args)
         {
             var server = new Server();
@@ -31,25 +31,30 @@ namespace Server
             if (command.StartsWith("bind "))
             {
                 var parts = command.Split(' ');
-                var ip = parts[1];
-                var device = server.GetDevice(ip);
+                int sessionId;
+                if (!int.TryParse(parts[1], out sessionId))
+                {
+                    Console.WriteLine("Invalid session Id");
+                    return true;
+                }
+                var device = server.GetConnectedDevice(sessionId);
                 if (device != null)
                 {
-                    boundIp = ip;
-                    Console.WriteLine("Bound to " + boundIp);
+                    boundSessionId = sessionId;
+                    Console.WriteLine("Bound to device " + boundSessionId);
                 }
                 else
                 {
-                    Console.WriteLine("Device " + ip + " not found");
+                    Console.WriteLine("Connected device with session ID " + sessionId + " not found");
                 }
                 return true;
             }
-            if (boundIp == null)
+            if (boundSessionId == -1)
             {
                 Console.WriteLine("Not bound to a device");
                 return true;
             }
-            var response = server.SendCommand(boundIp, command);
+            var response = server.SendCommand(boundSessionId, command);
             if (response == null)
             {
                 Console.WriteLine("no response");
@@ -81,7 +86,7 @@ namespace Server
                 return;
             foreach (var device in server.GetConnectedDevices())
             {
-                Console.WriteLine(device);
+                Console.WriteLine($"{device.SessionId}) {device.IpAddress}");
             }
         }
     }

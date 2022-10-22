@@ -16,11 +16,17 @@ namespace Server
         NetworkStream networkStream;
         Server server;
         public EndPoint RemoteEndpoint { get; private set; }
+        public int SessionId { get; private set; }
 
         public ClientHandler(TcpClient client, Server server)
         {
             this.client = client;
             this.server = server;
+        }
+
+        public void SetSessionId(int sessionId)
+        {
+            SessionId = sessionId;
         }
 
         public void Run()
