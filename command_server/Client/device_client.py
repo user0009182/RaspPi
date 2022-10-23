@@ -15,7 +15,11 @@ class Client:
         self.sensor_temp = machine.ADC(4)
         self.__socket = None
         self.command_handler = None
+        self.think_handler = None
         self.extra_command_list = None
+        self._shutdown=False
+        self._think_interval=60
+        self._next_think_time=0
 
     def obf(self, byte_data):
         mask = b'abcdefg'
@@ -60,15 +64,27 @@ class Client:
         print("sent " + str)
 
     def receiveData(self):
-        dataLength = self.__socket.recv(2)
+        try:
+            dataLength = self.__socket.recv(2)
+        except OSError as exc: 
+            if exc.errno != 110: #timeout
+                raise exc
+            return None
         length = int.from_bytes(dataLength, "little")
         if length > 64:
             print("receive length {} exceeds __max_recv_length {}".format(length, self.__max_recv_length))
+            self._shutdown=True
             return None
-        data = self.__socket.recv(length)
+        try:
+            data = self.__socket.recv(length)
+        except OSError as exc:
+            if exc.errno != 110: #timeout
+                raise exc
+            #todo handle bad state
+            return None
         return data
 
-    def receiveStringData(self):
+    def receive_string_data(self):
         data = self.receiveData()
         if data == None:
             return None
@@ -90,6 +106,7 @@ class Client:
             try:
                 print("connecting to {}:{}".format(ip, port))
                 self.__socket = socket.socket()
+                self.__socket.settimeout(10)
                 self.__socket.connect(addr)
                 print("connected")
                 return self.__socket
@@ -104,7 +121,7 @@ class Client:
 
     def connect_handshake(self):
         self.sendStringData("device")
-        str_data=self.receiveStringData()
+        str_data=self.receive_string_data()
         if str_data == None:
             print("connect_handshake failed")
             return False
@@ -112,7 +129,6 @@ class Client:
         if str_data == "server":
             self.sendStringData("ok")
         return True
-
     def process_command(self, command):
         try:
             if not self.command_handler == None:
@@ -120,39 +136,53 @@ class Client:
         except Exception as e:
             print("error in command_handler - {}".format(e))
         return False
+    def check_for_command(self):
+        command=self.receive_string_data()
+        if command == None:
+            return
+        if command == "ping":
+            self.sendStringData("pong")
+        elif command == "shutdown":
+            self._shutdown=True
+        elif command == "?":
+            command_list = "ping,shutdown,set led off,set led on"
+            if not self.extra_command_list == None:
+                str=",".join(self.extra_command_list)
+                if len(str) > 0:
+                    command_list += "," + str
+            self.sendStringData(command_list)
+        elif command == "get led":
+            aa = str(self.led_in.value())
+            self.sendStringData(aa)
+        elif command == "set led off":
+            self.led_out.off()
+            self.sendStringData("ok")
+        elif command == "set led on":
+            self.led_out.on()
+            self.sendStringData("ok")
+        elif command == "get temp":
+            reading = self.readTemperature()
+            self.sendStringData(str(reading))
+        else:
+            processed = self.process_command(command)
+            if not processed:
+                self.sendStringData("unknown command {}".format(command))
+
     def command_loop(self):
         while True:
-            command=self.receiveStringData()
-            if command == None:
-                #error occured reading command
+            self.check_for_command()
+            if self._shutdown:
                 break
-            if command == "ping":
-                self.sendStringData("pong")
-            elif command == "shutdown":
-                break
-            elif command == "?":
-                command_list = "ping,shutdown,set led off,set led on"
-                if not self.extra_command_list == None:
-                    str=",".join(self.extra_command_list)
-                    if len(str) > 0:
-                        command_list += "," + str
-                self.sendStringData(command_list)
-            elif command == "get led":
-                aa = str(self.led_in.value())
-                self.sendStringData(aa)
-            elif command == "set led off":
-                self.led_out.off()
-                self.sendStringData("ok")
-            elif command == "set led on":
-                self.led_out.on()
-                self.sendStringData("ok")
-            elif command == "get temp":
-                reading = self.readTemperature()
-                self.sendStringData(str(reading))
-            else:
-                processed = self.process_command(command)
-                if not processed:
-                    self.sendStringData("unknown command {}".format(command))
+            if time.time() > self._next_think_time:
+                self.think()
+            time.sleep(1)
+
+    def think(self):
+        if self.think_handler != None:
+            next_think_seconds=self.think_handler()
+            if next_think_seconds < 30:
+                next_think_seconds = 30
+            self._next_think_time = time.time() + next_think_seconds
 
     def start(self, server_ip_address, server_port):
         self.led_out.off()
@@ -173,4 +203,3 @@ class Client:
         wlan.disconnect()
         self.led_out.off()
         return True
-
