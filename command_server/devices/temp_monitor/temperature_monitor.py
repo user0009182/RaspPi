@@ -48,6 +48,7 @@ def think_handler():
     return 60 #approx number of seconds until next think
 
 def start_temperature_monitor():
+    global dht11
     dht11 = Dht11(15)
     client = DeviceClient(Logger())
     client.set_command_handler(command_handler, ['get_reading', 'get_readings'])

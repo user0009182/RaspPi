@@ -95,7 +95,7 @@ namespace Server
                     continue;
                 }
 
-                bool signal = commandResetEvent.WaitOne(5000);
+                bool signal = commandResetEvent.WaitOne(60000);
                 if (signal)
                 {
                     continue;
@@ -130,8 +130,8 @@ namespace Server
             }
             return Encoding.ASCII.GetString(data);
         }
-
-        const int MAX_RECV_PACKET_SIZE = 1024;
+         
+        const int MAX_RECV_PACKET_SIZE = 4096;
         byte[] ReceiveDataWithTimeout(int timeoutMs)
         {
             var reader = new BinaryReader(networkStream);
@@ -139,7 +139,7 @@ namespace Server
             try
             {
                 ushort dataLength = reader.ReadUInt16();
-                if (dataLength > 1024)
+                if (dataLength > MAX_RECV_PACKET_SIZE)
                 {
                     Debug.WriteLine($"Received length {dataLength} exceeds MAX_RECV_PACKET_SIZE {MAX_RECV_PACKET_SIZE}");
                     return null;
