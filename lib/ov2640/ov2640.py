@@ -62,8 +62,8 @@ class ov2640(object):
         # test the SPI bus
         cam_spi_write(b'\x00', b'\x55', self.hspi, self.cspin)
         res = cam_spi_read(b'\x00', self.hspi, self.cspin)
-        print("ov2640 init:  register test return bytes %s" % ubinascii.hexlify(res))
-        if (res == b'\x55'):
+        #print("ov2640 init:  register test return bytes %s" % ubinascii.hexlify(res))
+        if (res == 0x55): #b'\x55'):
             print("ov2640_init: register test successful")
         else:
             print("ov2640_init: register test failed!")
@@ -98,8 +98,8 @@ class ov2640(object):
         # read the image from the camera fifo
         while True:
             res = cam_spi_read(b'\x41', self.hspi, self.cspin)
-            mask = b'\x08'
-            if (res[0] & mask[0]):
+            mask = 0x08 #b'\x08'
+            if (res & mask):
                 break
             #print("continuing, res register %s" % ubinascii.hexlify(res))
             time.sleep_ms(10)
@@ -110,7 +110,7 @@ class ov2640(object):
         b1 = cam_spi_read(b'\x44', self.hspi, self.cspin)
         b2 = cam_spi_read(b'\x43', self.hspi, self.cspin)
         b3 = cam_spi_read(b'\x42', self.hspi, self.cspin)
-        val = b1[0] << 16 | b2[0] << 8 | b3[0] 
+        val = b1 << 16 | b2 << 8 | b3
         print("ov2640_capture: %d bytes in fifo" % val)
         gc.collect()
     
