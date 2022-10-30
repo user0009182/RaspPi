@@ -1,6 +1,12 @@
 #ArduCAM OV2640 Camera Shield controller
-#from https://github.com/namato/micropython-ov2640
-
+#modified from https://github.com/namato/micropython-ov2640
+#https://cdn.shopify.com/s/files/1/0176/3274/files/ArduCAM_Mini_2MP_Camera_Shield_DS.pdf?v=1614860211
+#OV2640
+#https://www.arducam.com/ov2640/
+#https://github.com/kanflo/esparducam/blob/master/arducam/arducam.c
+#https://github.com/ArduCAM/Sensor-Regsiter-Decoder/blob/master/OV2640_JPEG_INIT.csv
+#another controller in CircuitPython:
+#https://github.com/ArduCAM/PICO_SPI_CAM/tree/master/Python
 from ov2640_constants import *
 from ov2640_lores_constants import *
 from ov2640_hires_constants import *
@@ -9,22 +15,26 @@ import time
 import ubinascii
 import uos
 import gc
+import sys
 
 class ov2640(object):
-    def __init__(self, sclpin=5, sdapin=4, cspin=2, resolution=OV2640_320x240_JPEG):
+    def __init__(self, sclpin=9, sdapin=8, cspin=5, resolution=OV2640_320x240_JPEG):
         self.sdapin=sdapin
         self.sclpin=sclpin
         self.cspin=cspin
         self.standby = False
 
-        self.hspi = machine.SPI(1, baudrate=80000000, polarity=0, phase=0)
-        self.i2c = machine.I2C(scl=machine.Pin(5), sda=machine.Pin(4), freq=1000000)
+        self.hspi = machine.SPI(0, baudrate=80000000, polarity=0, phase=0,
+        sck=machine.Pin(2),
+                  mosi=machine.Pin(3),
+                  miso=machine.Pin(4))
+        self.i2c = machine.SoftI2C(scl=machine.Pin(sclpin), sda=machine.Pin(sdapin), freq=1000000)
     
         # first init spi assuming the hardware spi is connected
         self.hspi.init(baudrate=2000000)
 
         # chip select -- active low
-        self.cspin = machine.Pin(2, machine.Pin.OUT)
+        self.cspin = machine.Pin(cspin, machine.Pin.OUT)
         self.cspin.on()
 
         # init the i2c interface
@@ -32,20 +42,16 @@ class ov2640(object):
         print('ov2640_init: devices detected on on i2c:')
         for a in addrs:
             print('0x%x' % a)
-   
         # select register set
         self.i2c.writeto_mem(SENSORADDR, 0xff, b'\x01')
         # initiate system reset
         self.i2c.writeto_mem(SENSORADDR, 0x12, b'\x80')
-       
         # let it come up
         time.sleep_ms(100)
-    
         # jpg init registers
         cam_write_register_set(self.i2c, SENSORADDR, OV2640_JPEG_INIT)
         cam_write_register_set(self.i2c, SENSORADDR, OV2640_YUV422)
         cam_write_register_set(self.i2c, SENSORADDR, OV2640_JPEG)
-   
         # select register set
         self.i2c.writeto_mem(SENSORADDR, 0xff, b'\x01')
         self.i2c.writeto_mem(SENSORADDR, 0x15, b'\x00')
@@ -61,6 +67,7 @@ class ov2640(object):
             print("ov2640_init: register test successful")
         else:
             print("ov2640_init: register test failed!")
+            sys.exit(0)
     
         # register set select
         self.i2c.writeto_mem(SENSORADDR, 0xff, b'\x01')
@@ -74,7 +81,7 @@ class ov2640(object):
             print("ov2640_init: device type looks correct, bytes: %s/%s" % \
                     (ubinascii.hexlify(parta), ubinascii.hexlify(partb)))
 
-    def capture_to_file(self, fn, overwrite):
+    def capture_image(self):
         # bit 0 - clear FIFO write done flag
         cam_spi_write(b'\x04', b'\x01', self.hspi, self.cspin)
     
@@ -107,33 +114,17 @@ class ov2640(object):
         print("ov2640_capture: %d bytes in fifo" % val)
         gc.collect()
     
-        bytebuf = [ 0, 0 ]
-        picbuf = [ b'\x00' ] * PICBUFSIZE
+        bytebuf = bytearray(2)
         l = 0
-        bp = 0
-        if (overwrite == True):
-            #print("deleting old file %s" % fn)
-            try:
-                uos.remove(fn)
-            except OSError:
-                pass
-        while ((bytebuf[0] != b'\xd9') or (bytebuf[1] != b'\xff')):
-            bytebuf[1] = bytebuf[0]
-            if (bp > (len(picbuf) - 1)):
-                #print("appending buffer to %s" % fn)
-                appendbuf(fn, picbuf, bp)
-                bp = 0
-    
+        #todo dynamic size
+        image_data = bytearray(20000)
+        while (bytebuf[0] != 0xd9) or (bytebuf[1] != 0xff):
+            bytebuf[1] = bytebuf[0]   
             bytebuf[0] = cam_spi_read(b'\x3d', self.hspi, self.cspin)
+            image_data[l] = bytebuf[0]
             l += 1
-            #print("read so far: %d, next byte: %s" % (l, ubinascii.hexlify(bytebuf[0])))
-            picbuf[bp] = bytebuf[0]
-            bp += 1
-        if (bp > 0):
-            #print("appending final buffer to %s" % fn)
-            appendbuf(fn, picbuf, bp)
         print("read %d bytes from fifo, camera said %d were available" % (l, val))
-        return (l)
+        return (image_data, l)
 
     # XXX these need some work
     def standby(self):
@@ -183,16 +174,12 @@ def cam_spi_write(address, value, hspi, cspin):
     hspi.write(d)
     cspin.on()
 
+wbuf2 = bytearray(1)
 def cam_spi_read(address, hspi, cspin):
     cspin.off()
     maskbits = b'\x7f'
-    wbuf = bytes([address[0] & maskbits[0]])
-    hspi.write(wbuf)
-    buf = hspi.read(1)
+    wbuf2[0] = address[0] & maskbits[0]
+    hspi.write(wbuf2)
+    hspi.readinto(wbuf2)
     cspin.on()
-    return (buf)
-
-# cam driver code
-# https://github.com/kanflo/esparducam/blob/master/arducam/arducam.c
-# register info
-# https://github.com/ArduCAM/Sensor-Regsiter-Decoder/blob/master/OV2640_JPEG_INIT.csv
+    return wbuf2[0]
