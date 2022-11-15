@@ -14,11 +14,11 @@ namespace Server
     {
         private TcpClient client;
         NetworkStream networkStream;
-        Server server;
+        DeviceServer server;
         public EndPoint RemoteEndpoint { get; private set; }
         public int SessionId { get; private set; }
 
-        public ClientHandler(TcpClient client, Server server)
+        public ClientHandler(TcpClient client, DeviceServer server)
         {
             this.client = client;
             this.server = server;
@@ -36,9 +36,9 @@ namespace Server
             bool isConnected = ConnectHandshake();
             if (isConnected)
             {
-                server.RegisterConnectedClient(this);
+                //server.RegisterConnectedClient(this);
                 ProcessLoop();
-                server.DeregisterClient(this);
+                //server.DeregisterClient(this);
             }
             Disconnect();
 
@@ -130,8 +130,8 @@ namespace Server
             }
             return Encoding.ASCII.GetString(data);
         }
-         
-        const int MAX_RECV_PACKET_SIZE = 4096;
+
+        const int MAX_RECV_PACKET_SIZE = 18192; //4096;
         byte[] ReceiveDataWithTimeout(int timeoutMs)
         {
             var reader = new BinaryReader(networkStream);

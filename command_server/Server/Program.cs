@@ -8,11 +8,12 @@ namespace Server
     class Program
     {
         static int boundSessionId=-1;
+        static ConnectorRepository connectors = new ConnectorRepository();
         static void Main(string[] args)
         {
-            var server = new Server();
+            var server = new DeviceServer(null, new Logger());
             server.Start(21008);
-
+            
             while (true)
             {
                 Console.Write("> ");
@@ -21,7 +22,12 @@ namespace Server
             }
         }
 
-        static bool ProcessCommand(Server server, string command)
+        static void OpenConnectionToRestServer(string hostname, int port)
+        {
+            
+        }
+
+        public static bool ProcessCommand(DeviceServer server, string command)
         {
             if (command == "list")
             {
@@ -72,13 +78,16 @@ namespace Server
                     }
                     return true;
                 }
+                if (command == "get_image")
+                {
+                    System.IO.File.WriteAllBytes(@"imageA.jpg", Convert.FromBase64String(response));
+                }
                 Console.WriteLine(response);
                 return true;
             }
-            return false;
         }
 
-        static void ListDevices(Server server)
+        static void ListDevices(DeviceServer server)
         {
             var devices = server.GetConnectedDevices();
             Console.WriteLine($"{devices.Count} connected devices");
