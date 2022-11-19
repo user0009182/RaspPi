@@ -19,6 +19,7 @@ namespace Server
         DeviceProtocolReader reader;
         DeviceProtocolWriter writer;
         ILogger logger;
+        public Guid RemoteDeviceId { get; set; }
         public DeviceClient(ILogger logger)
         {
             this.logger = logger;
@@ -54,10 +55,16 @@ namespace Server
             reader = new DeviceProtocolReader(new BinaryReader(stream));
         }
 
+        internal bool DoHandshakeAsServer(DeviceServer server)
+        {
+            var handshake = new DeviceHandshake(logger);
+            return handshake.DoHandshakeAsServer(this, server.DeviceId);
+        }
+
         /// <summary>
         /// Create a new connection as a client
         /// </summary>
-        public void Connect(string hostname, int port, TlsInfo tlsInfo) // bool tls, string clientCertificateFilePath, string clientKeyPath)
+        public void Connect(string hostname, int port, TlsInfo tlsInfo, Guid serverDeviceId) // bool tls, string clientCertificateFilePath, string clientKeyPath)
         {
             if (tlsInfo == null)
                 tlsInfo = new TlsInfo(false, "", "");
@@ -87,7 +94,8 @@ namespace Server
             reader = new DeviceProtocolReader(new BinaryReader(stream));
             reader.SetTimeout(30000);
             writer.SetTimeout(30000);
-            DoHandshakeAsClient();
+            var handshake = new DeviceHandshake(logger);
+            handshake.DoHandshakeAsClient(this, serverDeviceId);
         }
 
         private bool ValidateServerCertificate(object sender, X509Certificate? certificate, X509Chain? chain, SslPolicyErrors sslPolicyErrors)
@@ -157,41 +165,6 @@ namespace Server
         //    }
         //}
 
-        public bool DoHandshakeAsServer()
-        {
-            logger.Log($"begin device protocol handshake as server");
-            //TODO reader.settimeout
-            var data = reader.ReadData16();
-            if (data == null)
-                return false;
-            if (Encoding.ASCII.GetString(data) != "device")
-                return false;
-            //TODO timeout catch IOException on receive?
-            writer.WriteData16(Encoding.ASCII.GetBytes("server"));
-            data = reader.ReadData16();
-            if (data == null)
-                return false;
-            if (Encoding.ASCII.GetString(data) != "ok")
-                return false;
-            //var sent = SendDataWithTimeout(Encoding.ASCII.GetBytes("server"), 10000);
-            //if (!sent)
-            //    return false;
-            //data = ReceiveDataWithTimeout(10000);
-
-            logger.Log($"device protocol handshake complete OK");
-            return true;
-        }
-
-        public bool DoHandshakeAsClient()
-        {
-            logger.Log($"begin device protocol handshake as client");
-            writer.WriteData16(Encoding.ASCII.GetBytes("device"));
-            var data = reader.ReadData16();
-            if (Encoding.ASCII.GetString(data) != "server")
-                return false;
-            writer.WriteData16(Encoding.ASCII.GetBytes("ok"));
-            logger.Log($"handshake complete OK");
-            return true;
-        }
+        
     }
 }

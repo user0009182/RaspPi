@@ -47,7 +47,7 @@ namespace Server
                 {
                     DeviceClient client = new DeviceClient(server.Logger);
                     client.WrapTcpClient(tcpClient, tlsInfo);
-                    var success = client.DoHandshakeAsServer();
+                    var success = client.DoHandshakeAsServer(server);
                     if (!success)
                     {
                         server.WriteLog("incoming client device protocol handshake failed");

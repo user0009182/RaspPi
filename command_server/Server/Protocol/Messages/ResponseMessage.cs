@@ -7,13 +7,13 @@
     //n bytes: response data
     public class ResponseMessage : BaseMessage
     {
-        private uint requestId;
-        private byte[] requestData;
+        public uint RequestId { get; }
+        public byte[] RequestData { get; }
 
         public ResponseMessage(uint requestId, byte[] requestData) : base(DeviceProtocolMessageType.Response)
         {
-            this.requestId = requestId;
-            this.requestData = requestData;
+            this.RequestId = requestId;
+            this.RequestData = requestData;
         }
     }
 }

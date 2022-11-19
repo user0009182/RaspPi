@@ -14,10 +14,14 @@ namespace Server
         DeviceListener listener;
         int nextSessionId = 0;
         BlockingCollection<BaseMessage> receivedMessageQueue = new BlockingCollection<BaseMessage>();
-        Dictionary<int, DeviceClientHandler> connectedDevices = new Dictionary<int, DeviceClientHandler>();
+        Dictionary<Guid, DeviceClientHandler> connectedDevices = new Dictionary<Guid, DeviceClientHandler>();
+        IncomingMessageProcessor incomingMessageProcessor;
+        ResponseTimeoutThread responseTimeoutThread;
+        ServerCommandHandler commandHandler;
+        public RoutedRequestTable RoutedRequestTable { get; }
+
         ILogger logger;
         TlsInfo tlsInfo;
-
         public ILogger Logger
         {
             get
@@ -26,12 +30,25 @@ namespace Server
             }
         }
 
+        public MessageRouter Router { get; }
+        public Guid DeviceId { get; }
+        public BlockingCollection<RequestMessage> CommandQueue { get; internal set; } = new BlockingCollection<RequestMessage>();
+
         public DeviceServer(TlsInfo tlsInfo, ILogger logger)
         {
             if (tlsInfo == null)
                 tlsInfo = new TlsInfo(false, "", "");
             this.tlsInfo = tlsInfo;
             this.logger = logger;
+            DeviceId = Guid.NewGuid();
+            Router = new MessageRouter(this);
+            RoutedRequestTable = new RoutedRequestTable(this, logger);
+            incomingMessageProcessor = new IncomingMessageProcessor(this, receivedMessageQueue, logger);
+            responseTimeoutThread = new ResponseTimeoutThread(this, RoutedRequestTable, logger);
+            commandHandler = new ServerCommandHandler(this, logger);
+            incomingMessageProcessor.Start();
+            responseTimeoutThread.Start();
+            commandHandler.Start();
         }
 
         public void CreateDeviceClientHandler(DeviceClient client)
@@ -40,7 +57,7 @@ namespace Server
             {
                 var handler = new DeviceClientHandler(client, nextSessionId, this, receivedMessageQueue);
                 handler.Start();
-                connectedDevices.Add(nextSessionId, handler);
+                connectedDevices.Add(client.RemoteDeviceId, handler);
                 nextSessionId++;
             }
         }
@@ -66,14 +83,25 @@ namespace Server
             }
         }
 
-        internal DeviceClientHandler GetConnectedDevice(int sessionId)
+        internal DeviceClientHandler GetConnectedDevice(Guid deviceId)
         {
             DeviceClientHandler ret = null;
             lock (connectedDevices)
             {
-                connectedDevices.TryGetValue(sessionId, out ret);
+                connectedDevices.TryGetValue(deviceId, out ret);
             }
             return ret;
+        }
+
+        uint nextRequestId = 0;
+        object lock_obj = new object();
+        internal uint GenerateRequestId()
+        {
+            lock(lock_obj)
+            {
+                nextRequestId++;
+                return nextRequestId;
+            }
         }
 
         internal void OnHandlerFault(DeviceClientHandler handler)
@@ -94,21 +122,21 @@ namespace Server
         {
             lock (connectedDevices)
             {
-                connectedDevices.Remove(clientHandler.SessionId);
+                connectedDevices.Remove(clientHandler.Client.RemoteDeviceId);
             }
             WriteLog($"device {clientHandler.SessionId} deregistered");
         }
 
-        internal string SendCommand(int sessionId, string command)
-        {
-            var client = GetConnectedDevice(sessionId);
-            if (client == null)
-            {
-                WriteLog($"Bound device {sessionId} is not connected");
-                return null;
-            }
-            return ""; // client.EnqueueCommand(command);
-        }
+        //internal string SendCommand(int sessionId, string command)
+        //{
+        //    var client = GetConnectedDevice(sessionId);
+        //    if (client == null)
+        //    {
+        //        WriteLog($"Bound device {sessionId} is not connected");
+        //        return null;
+        //    }
+        //    return ""; // client.EnqueueCommand(command);
+        //}
 
         public void WriteLog(string text)
         {
@@ -132,12 +160,12 @@ namespace Server
 
     public struct ConnectedDeviceInfo
     {
-        public int SessionId;
+        public Guid DeviceId;
         public string IpAddress;
 
-        public ConnectedDeviceInfo(int sessionId, string ipAddress)
+        public ConnectedDeviceInfo(Guid deviceId, string ipAddress)
         {
-            SessionId = sessionId;
+            DeviceId = deviceId;
             IpAddress = ipAddress;
         }
     }

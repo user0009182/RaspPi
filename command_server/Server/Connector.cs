@@ -19,7 +19,7 @@ namespace Server
         public void Connect(string hostname, int port, ConnectorSecurityInfo securityInfo)
         {
             client = new DeviceClient(null);
-            client.Connect(hostname, port, null); // false, securityInfo.ClientCertificatePath, securityInfo.ClientPrivateKeyPath);
+            client.Connect(hostname, port, null, Guid.NewGuid()); // false, securityInfo.ClientCertificatePath, securityInfo.ClientPrivateKeyPath);
             Task.Run(() => ThreadProc(hostname, port, securityInfo));
         }
 
@@ -90,7 +90,7 @@ namespace Server
         {
             var command = connector.ReceiveCommand();
             //issue command to server and await response
-            Program.ProcessCommand(server, command);
+            //Program.ProcessCommand(server, command);
             //wait for command
             //connector.recv
             //expect ping every minute

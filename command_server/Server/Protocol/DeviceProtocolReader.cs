@@ -47,7 +47,7 @@ namespace Server
             uint requestDataLength = reader.ReadUInt32();
             //todo protect against attack
             var requestData = reader.ReadBytes((int)requestDataLength);
-            var request = new RequestMessage(requestId, targetName, targetGuid, requestData);
+            var request = new RequestMessage(requestId, targetName, new Guid(targetGuid), requestData);
             return request;
         }
 
@@ -59,6 +59,11 @@ namespace Server
             var requestData = reader.ReadBytes((int)requestDataLength);
             var response = new ResponseMessage(requestId, requestData);
             return response;
+        }
+
+        internal byte[] ReadBytes(int numBytes)
+        {
+            return reader.ReadBytes(numBytes);
         }
 
         public byte[] ReadData16()

@@ -16,32 +16,47 @@ namespace Server
             this.writer = writer;
         }
 
-        public void WriteMessage(BaseMessage message)
+        public void SendMessage(BaseMessage message)
         {
             switch (message.Type)
             {
-                case DeviceProtocolMessageType.RequestSimple:
-                    WriteSimpleRequest(message);
+                case DeviceProtocolMessageType.Request:
+                    SendRequestMessage(message as RequestMessage);
                     break;
-                case DeviceProtocolMessageType.ResponseSimple:
-                    WriteSimpleResponse(message);
+                case DeviceProtocolMessageType.Response:
+                    SendResponseMessage(message as ResponseMessage);
                     break;
                 default:
                     throw new DeviceProtocolException($"Attempted to write unknown message type {message.Type}");
             }
         }
 
-        void WriteSimpleRequest(BaseMessage message)
+        void SendRequestMessage(RequestMessage message)
         {
-            WriteMessageType(DeviceProtocolMessageType.RequestSimple);
-            WriteData16(message.Data);
-            //Debug.WriteLine("sent " + Encoding.ASCII.GetString(data));
+            WriteMessageType(DeviceProtocolMessageType.Request);
+            writer.Write((uint)message.RequestId);
+            if (message.TargetDeviceName != null)
+            {
+                var data = System.Text.Encoding.ASCII.GetBytes(message.TargetDeviceName);
+                writer.Write((byte)data.Length);
+                if (data.Length > 0)
+                    writer.Write(data);
+            }
+            else
+            {
+                writer.Write((byte)255);
+                writer.Write(message.TargetDeviceId.ToByteArray());
+            }
+            writer.Write((uint)message.RequestData.Length);
+            writer.Write(message.RequestData);
         }
 
-        void WriteSimpleResponse(BaseMessage message)
+        void SendResponseMessage(ResponseMessage message)
         {
-            WriteMessageType(DeviceProtocolMessageType.ResponseSimple);
-            WriteData16(message.Data);
+            WriteMessageType(DeviceProtocolMessageType.Response);
+            writer.Write((uint)message.RequestId);
+            writer.Write((uint)message.RequestData.Length);
+            writer.Write(message.RequestData);
             //Debug.WriteLine("sent " + Encoding.ASCII.GetString(data));
         }
 
@@ -59,6 +74,11 @@ namespace Server
         internal void SetTimeout(int timeoutMs)
         {
             writer.BaseStream.WriteTimeout = timeoutMs;
+        }
+
+        internal void WriteBytes(byte[] data)
+        {
+            writer.Write(data);
         }
     }
 }

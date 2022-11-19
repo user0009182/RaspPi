@@ -18,7 +18,7 @@ namespace Server
             {
                 Console.Write("> ");
                 var command = Console.ReadLine().ToLower();
-                ProcessCommand(server, command);
+                //ProcessCommand(server, command);
             }
         }
 
@@ -27,65 +27,65 @@ namespace Server
             
         }
 
-        public static bool ProcessCommand(DeviceServer server, string command)
-        {
-            if (command == "list")
-            {
-                ListDevices(server);
-                return true;
-            }
-            if (command.StartsWith("bind "))
-            {
-                var parts = command.Split(' ');
-                int sessionId;
-                if (!int.TryParse(parts[1], out sessionId))
-                {
-                    Console.WriteLine("Invalid session Id");
-                    return true;
-                }
-                var device = server.GetConnectedDevice(sessionId);
-                if (device != null)
-                {
-                    boundSessionId = sessionId;
-                    Console.WriteLine("Bound to device " + boundSessionId);
-                }
-                else
-                {
-                    Console.WriteLine("Connected device with session ID " + sessionId + " not found");
-                }
-                return true;
-            }
-            if (boundSessionId == -1)
-            {
-                Console.WriteLine("Not bound to a device");
-                return true;
-            }
-            var response = server.SendCommand(boundSessionId, command);
-            if (response == null)
-            {
-                Console.WriteLine("no response");
-                return true;
-            }
-            else
-            {
-                if (command == "?")
-                {
-                    var supportedCommands=response.Split(",");
-                    Console.WriteLine("Commands supported by bound device:");
-                    foreach (var c in supportedCommands)
-                    {
-                        Console.WriteLine(c);
-                    }
-                    return true;
-                }
-                if (command == "get_image")
-                {
-                    System.IO.File.WriteAllBytes(@"imageA.jpg", Convert.FromBase64String(response));
-                }
-                Console.WriteLine(response);
-                return true;
-            }
-        }
+        //public static bool ProcessCommand(DeviceServer server, string command)
+        //{
+        //    if (command == "list")
+        //    {
+        //        ListDevices(server);
+        //        return true;
+        //    }
+        //    if (command.StartsWith("bind "))
+        //    {
+        //        var parts = command.Split(' ');
+        //        int sessionId;
+        //        if (!int.TryParse(parts[1], out sessionId))
+        //        {
+        //            Console.WriteLine("Invalid session Id");
+        //            return true;
+        //        }
+        //        var device = server.GetConnectedDevice(sessionId);
+        //        if (device != null)
+        //        {
+        //            boundSessionId = sessionId;
+        //            Console.WriteLine("Bound to device " + boundSessionId);
+        //        }
+        //        else
+        //        {
+        //            Console.WriteLine("Connected device with session ID " + sessionId + " not found");
+        //        }
+        //        return true;
+        //    }
+        //    if (boundSessionId == -1)
+        //    {
+        //        Console.WriteLine("Not bound to a device");
+        //        return true;
+        //    }
+        //    var response = server.SendCommand(boundSessionId, command);
+        //    if (response == null)
+        //    {
+        //        Console.WriteLine("no response");
+        //        return true;
+        //    }
+        //    else
+        //    {
+        //        if (command == "?")
+        //        {
+        //            var supportedCommands=response.Split(",");
+        //            Console.WriteLine("Commands supported by bound device:");
+        //            foreach (var c in supportedCommands)
+        //            {
+        //                Console.WriteLine(c);
+        //            }
+        //            return true;
+        //        }
+        //        if (command == "get_image")
+        //        {
+        //            System.IO.File.WriteAllBytes(@"imageA.jpg", Convert.FromBase64String(response));
+        //        }
+        //        Console.WriteLine(response);
+        //        return true;
+        //    }
+        //}
 
         static void ListDevices(DeviceServer server)
         {
@@ -95,7 +95,7 @@ namespace Server
                 return;
             foreach (var device in server.GetConnectedDevices())
             {
-                Console.WriteLine($"{device.SessionId}) {device.IpAddress}");
+                Console.WriteLine($"{device.DeviceId}) {device.IpAddress}");
             }
         }
     }

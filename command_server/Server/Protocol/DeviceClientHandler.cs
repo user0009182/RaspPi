@@ -13,6 +13,23 @@ namespace Server
         BlockingCollection<BaseMessage> receiveQueue;
         DeviceServer server;
         bool shutdown;
+
+        public DeviceClient Client
+        {
+            get
+            {
+                return client;
+            }
+        }
+
+        public BlockingCollection<BaseMessage> SendQueue
+        {
+            get
+            {
+                return sendQueue;
+            }
+        }
+
         public DeviceClientHandler(DeviceClient client, int sessionId, DeviceServer server, BlockingCollection<BaseMessage> receiveQueue)
         {
             this.client = client;
@@ -45,6 +62,8 @@ namespace Server
                 while (!shutdown)
                 {
                     var message = client.Reader.ReceiveMessage();
+                    //tag the message with the ID of the device it was sent from
+                    message.SourceDeviceId = client.RemoteDeviceId;
                     receiveQueue.Add(message);
 
                 }
@@ -63,7 +82,7 @@ namespace Server
                 while (!shutdown)
                 {
                     var message = sendQueue.Take();
-                    client.Writer.WriteMessage(message);
+                    client.Writer.SendMessage(message);
                 }
             }
             catch (Exception)

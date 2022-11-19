@@ -17,18 +17,11 @@ namespace Server
         public Guid TargetDeviceId { get; }
         public byte[] RequestData { get; }
 
-        public RequestMessage(uint requestId, string targetName, byte[] targetGuid, byte[] requestData) : base(DeviceProtocolMessageType.Request)
+        public RequestMessage(uint requestId, string targetName, Guid targetGuid, byte[] requestData) : base(DeviceProtocolMessageType.Request)
         {
             this.RequestId = requestId;
             this.TargetDeviceName = targetName;
-            if (targetGuid != null)
-            {
-                TargetDeviceId = new Guid(targetGuid);
-            }
-            else
-            {
-                TargetDeviceId = Guid.Empty;
-            }
+            this.TargetDeviceId = targetGuid;
             this.RequestData = requestData;
         }
     }
