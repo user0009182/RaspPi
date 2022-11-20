@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Protocol;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -14,9 +15,9 @@ namespace Server
         Dictionary<uint, RoutedRequest> routedRequests = new Dictionary<uint, RoutedRequest>();
         object lock_obj = new object();
 
-        DeviceServer server;
+        Server server;
         ILogger logger;
-        public RoutedRequestTable(DeviceServer server, ILogger logger)
+        public RoutedRequestTable(Server server, ILogger logger)
         {
             this.server = server;
             this.logger = logger;
@@ -67,10 +68,10 @@ namespace Server
 
     class ResponseTimeoutThread
     {
-        private readonly DeviceServer server;
+        private readonly Server server;
         RoutedRequestTable routedRequestTable;
         ILogger logger;
-        public ResponseTimeoutThread(DeviceServer server, RoutedRequestTable routedRequestTable, ILogger logger)
+        public ResponseTimeoutThread(Server server, RoutedRequestTable routedRequestTable, ILogger logger)
         {
             this.server = server;
             this.routedRequestTable = routedRequestTable;

@@ -1,3 +1,4 @@
+using Protocol;
 using Server;
 using System;
 using System.Linq;
@@ -14,7 +15,7 @@ namespace Tests
         public void NonTlsClientConnect()
         {
             var serverLog = new Logger();
-            var server = new DeviceServer(null, serverLog);
+            var server = new Server.Server(null, serverLog);
             server.Start(10001);
             var clientLog = new Logger();
             var client = new DeviceClient(clientLog);
@@ -22,9 +23,9 @@ namespace Tests
             Assert.Contains(serverLog.Data, l => l.Contains("server starting"));
             Assert.Contains(serverLog.Data, l => l.Contains("listening on port"));
             Assert.Contains(serverLog.Data, l => l.Contains("client connected"));
-            Assert.Contains(serverLog.Data, l => l.Contains("handshake complete OK"));
+            Assert.Contains(serverLog.Data, l => l.Contains("handshake with connecting device complete"));
             Assert.Contains(clientLog.Data, l => l.Contains("connected to"));
-            Assert.Contains(clientLog.Data, l => l.Contains("handshake complete OK"));
+            Assert.Contains(clientLog.Data, l => l.Contains("handshake with server complete"));
             Assert.Single(server.GetConnectedDevices());
         }
 
@@ -32,7 +33,7 @@ namespace Tests
         public void TlsClientConnect()
         {
             var serverLog = new Logger();
-            var server = new DeviceServer(new TlsInfo(true, @"E:\git\tls\certificates\servercert.pem", @"E:\git\tls\certificates\serverkey.pem"), serverLog);
+            var server = new Server.Server(new TlsInfo(true, @"E:\git\tls\certificates\servercert.pem", @"E:\git\tls\certificates\serverkey.pem"), serverLog);
             server.Start(10002);
             var clientLog = new Logger();
             var client = new DeviceClient(clientLog);
@@ -42,11 +43,11 @@ namespace Tests
             Assert.Contains(serverLog.Data, l => l.Contains("listening on port"));
             Assert.Contains(serverLog.Data, l => l.Contains("client connected"));
             Assert.Contains(serverLog.Data, l => l.Contains("TLS authentication OK"));
-            Assert.Contains(serverLog.Data, l => l.Contains("handshake complete OK"));
+            Assert.Contains(serverLog.Data, l => l.Contains("handshake with connecting device complete"));
             Assert.Contains(clientLog.Data, l => l.Contains("connected to"));
             Assert.Contains(clientLog.Data, l => l.Contains("TLS authenticating as client"));
             Assert.Contains(clientLog.Data, l => l.Contains("TLS authenticated OK"));
-            Assert.Contains(clientLog.Data, l => l.Contains("handshake complete OK"));
+            Assert.Contains(clientLog.Data, l => l.Contains("handshake with server complete"));
             Assert.Single(server.GetConnectedDevices());
         }
 
@@ -54,7 +55,7 @@ namespace Tests
         public void MultiClientConnect()
         {
             var serverLog = new Logger();
-            var server = new DeviceServer(null, serverLog);
+            var server = new Server.Server(null, serverLog);
             server.Start(10003);
             var clientLog = new Logger();
             for (int i=0;i<5;i++)

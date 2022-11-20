@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Protocol;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,15 +15,14 @@ namespace Server
         private ILogger logger;
         CancellationToken cancellationToken;
         CancellationTokenSource cancellationSource = new CancellationTokenSource();
-        DeviceServer server;
+        Server server;
 
-        public IncomingMessageProcessor(DeviceServer server, BlockingCollection<BaseMessage> incomingMessageQueue, ILogger logger)
+        public IncomingMessageProcessor(Server server, BlockingCollection<BaseMessage> incomingMessageQueue, ILogger logger)
         {
             this.server = server;
             this.incomingMessageQueue = incomingMessageQueue;
             this.logger = logger;
             cancellationToken = cancellationSource.Token;
-
         }
 
         public void Start()
@@ -48,7 +48,6 @@ namespace Server
                 {
                     break;
                 }
-
             }
         }
 

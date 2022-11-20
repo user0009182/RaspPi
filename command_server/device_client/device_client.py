@@ -91,8 +91,14 @@ class __ServerConnection:
         if str_data == None:
             self.__log("connect_handshake failed")
             raise Exception()
-        if str_data == "server":
-            self.send_string_data("ok")
+        if str_data != "server":
+            self.__log("connect_handshake failed")
+            raise Exception()
+        device_uid=bytes([0x13, 0x00, 0x00, 0x00, 0x08, 0x00, 1, 2, 0x13, 0x00, 0x00, 0x00, 0x08, 0x00, 1, 2])  #uuid.UUID('{12345678-1234-5678-1234-567812345678}')
+        self.send_bytes(device_uid)
+        serveruid=self.receive_bytes(16)
+        #self.__log("server id {}".format(serveruid))
+        self.send_bytes(bytes("ok", 'ascii'))
         return True
     def send_string_data(self, str):
         data = bytes(str, 'ascii')
@@ -101,6 +107,9 @@ class __ServerConnection:
         self.__socket.write(lengthBytes)
         n = self.__socket.write(data)
         self.__log("sent " + str)
+    def send_bytes(self, bytes):
+        self.__socket.write(bytes)
+        self.__log("sent " + str(bytes))
     def receive_string_data(self):
         data = self.receive_data()
         if data == None:
@@ -108,6 +117,13 @@ class __ServerConnection:
         str=data.decode("ascii")
         self.__log("received " + str)
         return str
+    def receive_bytes(self, num_bytes):
+        try:
+            data = self.__socket.recv(num_bytes)
+        except OSError as exc: 
+            if exc.errno != 110: #timeout
+                raise exc
+            return None
     def receive_data(self):
         try:
             dataLength = self.__socket.recv(2)

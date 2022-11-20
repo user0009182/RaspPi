@@ -1,7 +1,10 @@
-﻿using System;
+﻿using Protocol;
+using System;
 using System.Collections.Concurrent;
+using System.IO;
 using System.Net;
 using System.Net.Sockets;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Server
@@ -11,8 +14,10 @@ namespace Server
         BlockingCollection<BaseMessage> sendQueue = new BlockingCollection<BaseMessage>();
         DeviceClient client;
         BlockingCollection<BaseMessage> receiveQueue;
-        DeviceServer server;
+        Server server;
         bool shutdown;
+        CancellationToken cancellationToken;
+        CancellationTokenSource cancellationSource = new CancellationTokenSource();
 
         public DeviceClient Client
         {
@@ -30,13 +35,14 @@ namespace Server
             }
         }
 
-        public DeviceClientHandler(DeviceClient client, int sessionId, DeviceServer server, BlockingCollection<BaseMessage> receiveQueue)
+        public DeviceClientHandler(DeviceClient client, int sessionId, Server server, BlockingCollection<BaseMessage> receiveQueue)
         {
             this.client = client;
             this.receiveQueue = receiveQueue;
             SessionId = sessionId;
             this.server = server;
             shutdown = false;
+            cancellationToken = cancellationSource.Token;
         }
 
         public EndPoint RemoteEndpoint
@@ -55,22 +61,38 @@ namespace Server
             Task.Run(() => SendThread());
         }
 
+        bool IsSocketTimeoutException(Exception e)
+        {
+            if (!(e is IOException))
+                return false;
+            var socketException = e.InnerException as SocketException;
+            if (socketException == null)
+                return false;
+            return socketException.SocketErrorCode == SocketError.TimedOut;
+        }
+
         void RecvThread()
         {
-            try
+            while (!shutdown)
             {
-                while (!shutdown)
+                try
                 {
                     var message = client.Reader.ReceiveMessage();
                     //tag the message with the ID of the device it was sent from
                     message.SourceDeviceId = client.RemoteDeviceId;
                     receiveQueue.Add(message);
-
                 }
-            }
-            catch (Exception)
-            {
-                server.OnHandlerFault(this);
+                catch (Exception e)
+                {
+                    if (IsSocketTimeoutException(e))
+                    {
+                        continue;
+                    }
+                    //TODO
+                    server.Logger.Log("Error receiving message");
+                    server.OnHandlerFault(this);
+                    break;
+                }
             }
         }
 
@@ -81,12 +103,17 @@ namespace Server
                 //wait a message to send
                 while (!shutdown)
                 {
-                    var message = sendQueue.Take();
+                    var message = sendQueue.Take(cancellationToken);
                     client.Writer.SendMessage(message);
                 }
             }
+            catch (OperationCanceledException)
+            {
+                //cancellationToken cancelled
+            }
             catch (Exception)
             {
+                server.Logger.Log("Error sending message");
                 server.OnHandlerFault(this);
             }
         }
@@ -94,6 +121,8 @@ namespace Server
         internal void Shutdown()
         {
             this.shutdown = true;
+            client.Close();
+            cancellationSource.Cancel();
         }
     }
 }

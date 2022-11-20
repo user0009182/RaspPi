@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Server
+namespace Protocol
 {
     //preliminary protocol
     //1 byte: message type

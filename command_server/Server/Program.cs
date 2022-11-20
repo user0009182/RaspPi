@@ -11,7 +11,7 @@ namespace Server
         static ConnectorRepository connectors = new ConnectorRepository();
         static void Main(string[] args)
         {
-            var server = new DeviceServer(null, new Logger());
+            var server = new Server(null, new Logger());
             server.Start(21008);
             
             while (true)
@@ -87,7 +87,7 @@ namespace Server
         //    }
         //}
 
-        static void ListDevices(DeviceServer server)
+        static void ListDevices(Server server)
         {
             var devices = server.GetConnectedDevices();
             Console.WriteLine($"{devices.Count} connected devices");

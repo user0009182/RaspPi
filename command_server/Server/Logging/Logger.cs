@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Protocol;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
@@ -23,10 +24,5 @@ namespace Server
             Console.WriteLine(text);
             log.Add(text);
         }
-    }
-
-    public interface ILogger
-    {
-        void Log(string text);
     }
 }

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Protocol;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,10 +9,10 @@ namespace Server
 {
     class ServerCommandHandler
     {
-        DeviceServer server;
+        Server server;
         private readonly ILogger logger;
 
-        public ServerCommandHandler(DeviceServer server, ILogger logger)
+        public ServerCommandHandler(Server server, ILogger logger)
         {
             this.server = server;
             this.logger = logger;
@@ -40,9 +41,27 @@ namespace Server
                 SendResponse(request, "pong");
                 return;
             }
+            if (command == "list")
+            {
+                ListDevicesCommand(request);
+                return;
+            }
 
             SendResponse(request, "unknown command");
         }
+
+        void ListDevicesCommand(RequestMessage request)
+        {
+            var devices = server.GetConnectedDevices();
+            var sb = new StringBuilder();
+            sb.AppendLine($"{devices.Count} connected devices");
+            foreach (var device in devices)
+            {
+                sb.AppendLine($"{device.DeviceId}) {device.IpAddress}");
+            }
+            SendResponse(request, sb.ToString());
+        }
+
 
         void SendResponse(RequestMessage request, string responseText)
         {

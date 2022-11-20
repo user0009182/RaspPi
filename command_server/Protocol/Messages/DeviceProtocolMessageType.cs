@@ -1,4 +1,4 @@
-﻿namespace Server
+﻿namespace Protocol
 {
     public enum DeviceProtocolMessageType
     { 

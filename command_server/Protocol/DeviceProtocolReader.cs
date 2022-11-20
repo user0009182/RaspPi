@@ -3,7 +3,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Net.Sockets;
 
-namespace Server
+namespace Protocol
 {
     public class DeviceProtocolReader
     {
@@ -17,7 +17,7 @@ namespace Server
 
         public BaseMessage ReceiveMessage()
         {
-            var messageType = ReadMessageType();
+            DeviceProtocolMessageType messageType = ReadMessageType();
             switch (messageType)
             {
                 case DeviceProtocolMessageType.Request:

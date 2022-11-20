@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Protocol;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -80,8 +81,8 @@ namespace Server
 
     class ConnectorHandler
     {
-        DeviceServer server;
-        public ConnectorHandler(DeviceServer server)
+        Server server;
+        public ConnectorHandler(Server server)
         {
             this.server = server;
         }

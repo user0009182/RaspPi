@@ -1,4 +1,4 @@
-﻿namespace Server
+﻿namespace Protocol
 {
     //response message
     //1 byte: 1

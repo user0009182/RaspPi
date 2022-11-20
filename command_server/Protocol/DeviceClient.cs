@@ -9,7 +9,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Server
+namespace Protocol
 {
     public class DeviceClient
     {
@@ -20,6 +20,25 @@ namespace Server
         DeviceProtocolWriter writer;
         ILogger logger;
         public Guid RemoteDeviceId { get; set; }
+
+        public DeviceProtocolReader Reader
+        {
+            get
+            {
+                return reader;
+            }
+        }
+
+        public DeviceProtocolWriter Writer
+        {
+            get
+            {
+                return writer;
+            }
+        }
+
+        public EndPoint RemoteEndpoint { get; private set; }
+
         public DeviceClient(ILogger logger)
         {
             this.logger = logger;
@@ -49,22 +68,28 @@ namespace Server
             {
                 stream = networkStream;
             }
-            stream.ReadTimeout = 60000;
-            stream.WriteTimeout = 60000;
+            stream.ReadTimeout = 10000;
+            stream.WriteTimeout = 10000;
             writer = new DeviceProtocolWriter(new BinaryWriter(stream));
             reader = new DeviceProtocolReader(new BinaryReader(stream));
         }
 
-        internal bool DoHandshakeAsServer(DeviceServer server)
+        public void Close()
         {
-            var handshake = new DeviceHandshake(logger);
-            return handshake.DoHandshakeAsServer(this, server.DeviceId);
+            if (sslStream != null)
+            {
+                sslStream.Close();
+            }
+            if (client != null)
+            {
+                client.Close();
+            }
         }
 
         /// <summary>
         /// Create a new connection as a client
         /// </summary>
-        public void Connect(string hostname, int port, TlsInfo tlsInfo, Guid serverDeviceId) // bool tls, string clientCertificateFilePath, string clientKeyPath)
+        public void Connect(string hostname, int port, TlsInfo tlsInfo, Guid ownDeviceId) // bool tls, string clientCertificateFilePath, string clientKeyPath)
         {
             if (tlsInfo == null)
                 tlsInfo = new TlsInfo(false, "", "");
@@ -95,7 +120,14 @@ namespace Server
             reader.SetTimeout(30000);
             writer.SetTimeout(30000);
             var handshake = new DeviceHandshake(logger);
-            handshake.DoHandshakeAsClient(this, serverDeviceId);
+            logger.Log($"begin handshake with server");
+            bool success = handshake.DoHandshakeAsClient(this, ownDeviceId);
+            if (!success)
+            {
+                logger.Log($"handshake with server failed");
+                return;
+            }
+            logger.Log($"handshake with server complete");
         }
 
         private bool ValidateServerCertificate(object sender, X509Certificate? certificate, X509Chain? chain, SslPolicyErrors sslPolicyErrors)
@@ -108,63 +140,5 @@ namespace Server
             logger.Log($"failed to validate server certificate: {sslPolicyErrors}");
             return false;
         }
-
-        public DeviceProtocolReader Reader
-        {
-            get
-            {
-                return reader;
-            }
-        }
-
-        public DeviceProtocolWriter Writer
-        {
-            get
-            {
-                return writer;
-            }
-        }
-
-        public EndPoint RemoteEndpoint { get; private set; }
-
-        //const int MAX_RECV_PACKET_SIZE = 18192; //4096;
-        //public byte[] ReceiveDataWithTimeout(int timeoutMs)
-        //{
-        //    networkStream.ReadTimeout = timeoutMs;
-        //    try
-        //    {
-        //        ushort dataLength = reader.ReadUInt16();
-        //        if (dataLength > MAX_RECV_PACKET_SIZE)
-        //        {
-        //            //Debug.WriteLine($"Received length {dataLength} exceeds MAX_RECV_PACKET_SIZE {MAX_RECV_PACKET_SIZE}");
-        //            return null;
-        //        }
-        //        var data = reader.ReadBytes(dataLength);
-        //        //Debug.WriteLine("received " + Encoding.ASCII.GetString(data));
-        //        return data;
-        //    }
-        //    catch (IOException)
-        //    {
-        //        return null;
-        //    }
-        //}
-
-        //public bool SendDataWithTimeout(byte[] data, int timeoutMs)
-        //{
-        //    networkStream.WriteTimeout = timeoutMs;
-        //    try
-        //    {
-        //        writer.Write((ushort)(data.Length));
-        //        writer.Write(data);
-        //        //Debug.WriteLine("sent " + Encoding.ASCII.GetString(data));
-        //        return true;
-        //    }
-        //    catch (IOException)
-        //    {
-        //        return false;
-        //    }
-        //}
-
-        
     }
 }

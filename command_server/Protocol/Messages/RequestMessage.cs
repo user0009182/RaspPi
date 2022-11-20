@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Server
+namespace Protocol
 {
     //request message
     //1 byte: 0

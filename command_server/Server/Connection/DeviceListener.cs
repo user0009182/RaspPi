@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Protocol;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -12,9 +13,9 @@ namespace Server
     class DeviceListener
     {
         int listenPort;
-        DeviceServer server;
+        Server server;
         TlsInfo tlsInfo;
-        public DeviceListener(int listenPort, DeviceServer server, TlsInfo tlsInfo)
+        public DeviceListener(int listenPort, Server server, TlsInfo tlsInfo)
         {
             this.listenPort = listenPort;
             this.server = server;
@@ -47,19 +48,22 @@ namespace Server
                 {
                     DeviceClient client = new DeviceClient(server.Logger);
                     client.WrapTcpClient(tcpClient, tlsInfo);
-                    var success = client.DoHandshakeAsServer(server);
+                    server.Logger.Log($"begin handshake with connecting device");
+                    var handshake = new DeviceHandshake(server.Logger);
+                    var success = handshake.DoHandshakeAsServer(client, server.DeviceId);
                     if (!success)
                     {
-                        server.WriteLog("incoming client device protocol handshake failed");
-                        return null;
+                        server.WriteLog("handshake with connecting device failed");
+                        client.Close();
+                        return;
                     }
+                    server.WriteLog("handshake with connecting device complete");
                     server.CreateDeviceClientHandler(client);
-                    return client;
+                    return;
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
-                    server.WriteLog("exception accepting client");
-                    throw;
+                    server.WriteLog("exception accepting connecting device");
                 }
             });
         }

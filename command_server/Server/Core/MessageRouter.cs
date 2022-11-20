@@ -8,8 +8,8 @@ namespace Server
 {
     public class MessageRouter
     {
-        DeviceServer server;
-        public MessageRouter(DeviceServer server)
+        Server server;
+        public MessageRouter(Server server)
         {
             this.server = server;
         }

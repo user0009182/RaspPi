@@ -1,3 +1,4 @@
+using Protocol;
 using Server;
 using System;
 using System.Linq;
@@ -16,7 +17,7 @@ namespace Tests
             var unknownDeviceId = Guid.Parse("{64648a8a-616a-48f8-92f2-5014df076c56}");
 
             var serverLog = new Logger();
-            var server = new DeviceServer(null, serverLog);
+            var server = new Server.Server(null, serverLog);
             server.Start(10004);
             var clientLog = new Logger();
             var client = new DeviceClient(clientLog);
@@ -31,7 +32,7 @@ namespace Tests
         public void ServerPingCommand()
         {
             var serverLog = new Logger();
-            var server = new DeviceServer(null, serverLog);
+            var server = new Server.Server(null, serverLog);
             server.Start(10005);
             var clientLog = new Logger();
             var client = new DeviceClient(clientLog);
@@ -46,7 +47,7 @@ namespace Tests
         public void ServerUnknownCommand()
         {
             var serverLog = new Logger();
-            var server = new DeviceServer(null, serverLog);
+            var server = new Server.Server(null, serverLog);
             server.Start(10006);
             var clientLog = new Logger();
             var client = new DeviceClient(clientLog);
