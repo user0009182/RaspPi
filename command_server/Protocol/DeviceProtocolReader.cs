@@ -34,10 +34,10 @@ namespace Protocol
             uint requestId = reader.ReadUInt32();
             byte targetNameLength = reader.ReadByte();
             string targetName=null;
-            byte[] targetGuid= null;
+            Guid targetGuid = Guid.Empty;
             if (targetNameLength == 255)
             {
-                targetGuid = reader.ReadBytes(16);
+                targetGuid = new Guid(reader.ReadBytes(16));
             }
             else if (targetNameLength > 0)
             {
@@ -47,7 +47,7 @@ namespace Protocol
             uint requestDataLength = reader.ReadUInt32();
             //todo protect against attack
             var requestData = reader.ReadBytes((int)requestDataLength);
-            var request = new RequestMessage(requestId, targetName, new Guid(targetGuid), requestData);
+            var request = new RequestMessage(requestId, targetName, targetGuid, requestData);
             return request;
         }
 
@@ -75,6 +75,13 @@ namespace Protocol
                 throw new DeviceProtocolException($"Message length {dataLength} exceeds MAX_SIMPLE_REQUEST_DATA_LENGTH");
             }
 
+            var data = reader.ReadBytes(dataLength);
+            return data;
+        }
+
+        public byte[] ReadData8()
+        {
+            ushort dataLength = reader.ReadByte();
             var data = reader.ReadBytes(dataLength);
             return data;
         }

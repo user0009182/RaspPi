@@ -57,7 +57,7 @@ namespace Server
             sb.AppendLine($"{devices.Count} connected devices");
             foreach (var device in devices)
             {
-                sb.AppendLine($"{device.DeviceId}) {device.IpAddress}");
+                sb.AppendLine($"{device.Name} {device.DeviceId} {device.IpAddress}");
             }
             SendResponse(request, sb.ToString());
         }

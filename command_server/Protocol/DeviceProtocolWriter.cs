@@ -71,6 +71,14 @@ namespace Protocol
             writer.Write(data);
         }
 
+        public void WriteData8(byte[] data)
+        {
+            if (data.Length > 255)
+                throw new Exception($"Too much data {data.Length} for WriteData8");
+            writer.Write((byte)data.Length);
+            writer.Write(data);
+        }
+
         internal void SetTimeout(int timeoutMs)
         {
             writer.BaseStream.WriteTimeout = timeoutMs;

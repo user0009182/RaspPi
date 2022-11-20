@@ -14,7 +14,7 @@ namespace Protocol
             this.logger = logger;
         }
 
-        public bool DoHandshakeAsServer(DeviceClient client, Guid serverDeviceId)
+        public bool DoHandshakeAsServer(DeviceClient client, Guid serverDeviceId, string servername)
         {
             try
             {
@@ -26,9 +26,14 @@ namespace Protocol
                     return false;
                 //TODO timeout catch IOException on receive?
                 client.Writer.WriteData16(Encoding.ASCII.GetBytes("server"));
+                client.Capabilities = (DeviceCapabilities)client.Reader.ReadBytes(1)[0];
                 client.RemoteDeviceId = new Guid(client.Reader.ReadBytes(16));
+                var clientDeviceName = Encoding.ASCII.GetString(client.Reader.ReadData8());
+                client.AssignName(clientDeviceName);
+                client.Writer.WriteBytes(new byte[] { (byte)DeviceCapabilities.Router });
                 //send 16 byte device ID
                 client.Writer.WriteBytes(serverDeviceId.ToByteArray());
+                client.Writer.WriteData8(Encoding.ASCII.GetBytes(servername));
                 data = client.Reader.ReadBytes(2);
                 if (data == null)
                     return false;
@@ -53,10 +58,14 @@ namespace Protocol
                 var data = client.Reader.ReadData16();
                 if (Encoding.ASCII.GetString(data) != "server")
                     return false;
+                client.Writer.WriteBytes(new byte[] { (byte)DeviceCapabilities.Router });
                 //send 16 byte device ID
                 client.Writer.WriteBytes(serverDeviceId.ToByteArray());
+                client.Writer.WriteData8(Encoding.ASCII.GetBytes(client.Name));
+                client.Capabilities = (DeviceCapabilities)client.Reader.ReadBytes(1)[0];
                 client.RemoteDeviceId = new Guid(client.Reader.ReadBytes(16));
-                logger.Log($"connected to device {client.RemoteDeviceId}");
+                var serverName = Encoding.ASCII.GetString(client.Reader.ReadData8());
+                logger.Log($"connected to device {serverName} {client.RemoteDeviceId}");
                 client.Writer.WriteBytes(Encoding.ASCII.GetBytes("ok"));
             }
             catch (Exception)

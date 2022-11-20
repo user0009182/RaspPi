@@ -111,7 +111,7 @@ namespace Server
             {
                 //cancellationToken cancelled
             }
-            catch (Exception)
+            catch (Exception e)
             {
                 server.Logger.Log("Error sending message");
                 server.OnHandlerFault(this);

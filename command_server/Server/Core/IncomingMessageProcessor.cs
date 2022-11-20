@@ -66,21 +66,30 @@ namespace Server
 
         void ProcessRequest(RequestMessage request)
         {
-            //resolve client handler for request
-            //determine target device_id of request
-            //if empty this will resolve to the server processor device_id
             var targetId = request.TargetDeviceId;
-            if (request.TargetDeviceName != null)
-            {
-                targetId = server.Router.GetDeviceIdByName(request.TargetDeviceName);
-            }
-
+            //handle internal command
             if (targetId == server.DeviceId)
             {
                 server.CommandQueue.Add(request);
                 return;
             }
 
+            //command needs to be forwarded elsewhere
+            //determine target device_id of request
+            if (request.TargetDeviceName != null)
+            {
+                var targetDevice = server.GetConnectedDevices().FirstOrDefault(f => f.Name.Equals(request.TargetDeviceName, StringComparison.CurrentCultureIgnoreCase));
+                if (targetDevice != null)
+                {
+                    targetId = targetDevice.DeviceId;
+                }
+                else
+                {
+                    logger.Log($"target {request.TargetDeviceName} not found");
+                }
+                //targetId = server.Router.GetDeviceIdByName(request.TargetDeviceName);
+            }
+            
             var handler = server.GetConnectedDevice(targetId);
             if (handler == null)
             {
@@ -100,7 +109,7 @@ namespace Server
 
             uint requestId = server.GenerateRequestId();
             server.RoutedRequestTable.AddEntry(requestId, targetId, request.SourceDeviceId, request.RequestId);
-            var newRequest = new RequestMessage(requestId, null, targetId, request.RequestData);
+            var newRequest = new RequestMessage(requestId, "", targetId, request.RequestData);
             handler.SendQueue.Add(newRequest);
         }
 

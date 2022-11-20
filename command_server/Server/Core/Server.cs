@@ -70,7 +70,7 @@ namespace Server
             {
                 foreach (var entry in connectedDevices)
                 {
-                    ret.Add(new ConnectedDeviceInfo(entry.Key, entry.Value.RemoteEndpoint.ToString()));
+                    ret.Add(new ConnectedDeviceInfo(entry.Value.Client.Name, entry.Key, entry.Value.RemoteEndpoint.ToString()));
                 }
             }
             return ret;
@@ -134,13 +134,15 @@ namespace Server
         }
     }
 
-    public struct ConnectedDeviceInfo
+    public class ConnectedDeviceInfo
     {
         public Guid DeviceId;
         public string IpAddress;
+        public string Name;
 
-        public ConnectedDeviceInfo(Guid deviceId, string ipAddress)
+        public ConnectedDeviceInfo(string name, Guid deviceId, string ipAddress)
         {
+            Name = name;
             DeviceId = deviceId;
             IpAddress = ipAddress;
         }

@@ -35,7 +35,7 @@ namespace Server
                 RoutedRequest routedRequest;
                 if (!routedRequests.TryGetValue(requestId, out routedRequest))
                     return null;
-                if (routedRequest.SrcDeviceId != sourceDeviceId)
+                if (routedRequest.DestDeviceId != sourceDeviceId)
                     return null;
                 routedRequests.Remove(requestId);
                 return routedRequest;

@@ -60,7 +60,7 @@ class __ServerConnection:
         self.__logger = logger
         self.__wifi = wifi
         self.__socket = None
-    def retry_until_connected(self, ip, port):
+    def retry_until_connected(self, ip, port, device_name):
         addr = socket.getaddrinfo(ip, port)[0][-1]
         retryInterval=1
         s = None
@@ -68,10 +68,10 @@ class __ServerConnection:
             try:
                 self.__log("connecting to {}:{}".format(ip, port))
                 self.__socket = socket.socket()
-                self.__socket.settimeout(10)
+                self.__socket.settimeout(30)
                 self.__socket.connect(addr)
                 self.__log("connected")
-                self.connect_handshake()
+                self.connect_handshake(device_name)
                 return self.__socket
             except Exception as exc:
                 self.__log("failed to connect")
@@ -85,9 +85,9 @@ class __ServerConnection:
             if retryInterval > 60:
                 retryInterval=60
         return None
-    def connect_handshake(self):
+    def connect_handshake(self, device_name):
         self.send_string_data("device")
-        str_data=self.receive_string_data()
+        str_data=self.receive_length_prefixed_string(2)
         if str_data == None:
             self.__log("connect_handshake failed")
             raise Exception()
@@ -95,38 +95,45 @@ class __ServerConnection:
             self.__log("connect_handshake failed")
             raise Exception()
         device_uid=bytes([0x13, 0x00, 0x00, 0x00, 0x08, 0x00, 1, 2, 0x13, 0x00, 0x00, 0x00, 0x08, 0x00, 1, 2])  #uuid.UUID('{12345678-1234-5678-1234-567812345678}')
+        self.send_bytes(bytes([0x00])) #capabilities 0 == simple requests only
         self.send_bytes(device_uid)
+        self.send_length_prefixed_string(device_name, 1)
+        capabilities=self.receive_bytes(1)
         serveruid=self.receive_bytes(16)
+        servername=self.receive_length_prefixed_string(1)
         #self.__log("server id {}".format(serveruid))
         self.send_bytes(bytes("ok", 'ascii'))
         return True
-    def send_string_data(self, str):
+    def send_length_prefixed_string(self, str, length_size):
         data = bytes(str, 'ascii')
         length = len(data)
-        lengthBytes = length.to_bytes(2, "little")
+        lengthBytes = length.to_bytes(length_size, "little")
         self.__socket.write(lengthBytes)
         n = self.__socket.write(data)
         self.__log("sent " + str)
+    def send_string_response(self, request_id, str):
+        print("sending response")
+        self.send_bytes(bytes([0x01])) #response
+        self.send_bytes(request_id)
+        self.send_length_prefixed_string(str, 4)
+    def send_string_data(self, str):
+        self.send_length_prefixed_string(str, 2)
     def send_bytes(self, bytes):
         self.__socket.write(bytes)
         self.__log("sent " + str(bytes))
-    def receive_string_data(self):
-        data = self.receive_data()
+    def receive_length_prefixed_string(self, length_size):
+        data = self.recv_length_prefixed_data(length_size)
         if data == None:
             return None
         str=data.decode("ascii")
         self.__log("received " + str)
         return str
     def receive_bytes(self, num_bytes):
+        data = self.__socket.recv(num_bytes)
+        return data
+    def recv_length_prefixed_data(self, length_size):
         try:
-            data = self.__socket.recv(num_bytes)
-        except OSError as exc: 
-            if exc.errno != 110: #timeout
-                raise exc
-            return None
-    def receive_data(self):
-        try:
-            dataLength = self.__socket.recv(2)
+            dataLength = self.__socket.recv(length_size)
         except OSError as exc: 
             if exc.errno != 110: #timeout
                 raise exc
@@ -160,7 +167,8 @@ class Logger:
 #can be extended with custom commands
 class DeviceClient:
     # logger          pass in an instance of Logger to log debug output
-    def __init__(self, logger=None):
+    def __init__(self, name, logger=None):
+        self.__name = name
         self.__logger = logger
         self.__shutdown = False
         self.__command_handler = None
@@ -199,7 +207,7 @@ class DeviceClient:
             try:
                 self.__wifi.retry_until_connected()
                 self.__log("Connected to WIFI")
-                self.__server.retry_until_connected(server_host, server_port)
+                self.__server.retry_until_connected(server_host, server_port, self.__name)
                 self.__log("Connected to server")
                 self.__last_server_contact=time.time()
                 self.__command_loop()
@@ -221,18 +229,30 @@ class DeviceClient:
             if time.time() > self.__next_think_time:
                 self.__think()
             #if no contact has been made by the server for some time then assume the connection to the server has failed
-            if time.time() > self.__last_server_contact + 120:
+            if time.time() > self.__last_server_contact + 1200:
                 self.__log("no ping received - reconnecting to server")
                 raise Exception
             time.sleep(1)
     def __check_for_command(self):
-        command=self.__server.receive_string_data()
-        if command == None:
-            return
+        try:
+            message_type=self.__server.receive_bytes(1)
+        except OSError as exc:
+            #in case of timeout just return
+            if exc.errno == 110: #timeout
+                return
+            raise exc
+        self.__log("message_type {}".format(message_type))
+        #treat any timeout after this point as an error
+        request_id=self.__server.receive_bytes(4)
+        self.__log("request_id {}".format(request_id))
+        target_name_length=self.__server.receive_bytes(1) #should be zero
+        self.__log("target_name_length {}".format(target_name_length))
+        command=self.__server.receive_length_prefixed_string(4)
+        self.__log("command {}".format(command))
         self.__last_server_contact = time.time()
         #implementation of automatically supported commands
         if command == "ping":
-            self.__server.send_string_data("pong")
+            self.__server.send_string_response(request_id, "pong")
         elif command == "shutdown":
             self.__shutdown=True
         elif command == "?":
@@ -243,33 +263,33 @@ class DeviceClient:
                 additional_command_list=",".join(self.__command_list)
                 if len(additional_command_list) > 0:
                     command_list += "," + additional_command_list
-            self.__server.send_string_data(command_list)
+            self.__server.send_string_response(request_id, command_list)
         elif command == "get led":
             #return the current state of the onboard LED
             led_value = str(self.__led_in.value())
-            self.__server.send_string_data(led_value)
+            self.__server.send_string_response(request_id, led_value)
         elif command == "set led off":
             self.__led_out.off()
-            self.__server.send_string_data("ok")
+            self.__server.send_string_response(request_id, "ok")
         elif command == "set led on":
             self.__led_out.on()
-            self.__server.send_string_data("ok")
+            self.__server.send_string_response(request_id, "ok")
         elif command == "get temp":
             reading = self.__readInternalTemperature()
-            self.__server.send_string_data(str(reading))
+            self.__server.send_string_response(request_id, str(reading))
         else:
             #command from server is not recognised as an internal command
             #try to run it through the custom command handler if one is defined
-            processed = self.__process_custom_command(command)
+            processed = self.__process_custom_command(request_id, command)
             if not processed:
-                self.__server.send_string_data("unknown command {}".format(command))
-    def __process_custom_command(self, command):
+                self.__server.send_string_response(request_id, "unknown command {}".format(command))
+    def __process_custom_command(self, request_id, command):
         try:
             if not self.__command_handler == None:
                 response_string = self.__command_handler(command)
                 if response_string == None:
                     return False
-                self.__server.send_string_data(response_string)
+                self.__server.send_string_response(request_id, response_string)
                 return True
         except Exception as e:
             self.__log("error in command_handler - {}".format(e))

@@ -50,7 +50,7 @@ namespace Server
                     client.WrapTcpClient(tcpClient, tlsInfo);
                     server.Logger.Log($"begin handshake with connecting device");
                     var handshake = new DeviceHandshake(server.Logger);
-                    var success = handshake.DoHandshakeAsServer(client, server.DeviceId);
+                    var success = handshake.DoHandshakeAsServer(client, server.DeviceId, "servername");
                     if (!success)
                     {
                         server.WriteLog("handshake with connecting device failed");
@@ -58,6 +58,7 @@ namespace Server
                         return;
                     }
                     server.WriteLog("handshake with connecting device complete");
+                    server.WriteLog($"{client.Name} {client.RemoteDeviceId} {client.RemoteEndpoint}");
                     server.CreateDeviceClientHandler(client);
                     return;
                 }

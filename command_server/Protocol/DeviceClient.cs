@@ -39,9 +39,20 @@ namespace Protocol
 
         public EndPoint RemoteEndpoint { get; private set; }
 
+        /// <summary>
+        /// Name of the device. This is initially provided by the device itself. It isn't guaranteed to be unique.
+        /// </summary>
+        public string Name { get; private set; } = "unnamed";
+        public DeviceCapabilities Capabilities { get; internal set; }
+
         public DeviceClient(ILogger logger)
         {
             this.logger = logger;
+        }
+
+        public void AssignName(string name)
+        {
+            Name = name;
         }
 
         /// <summary>
@@ -140,5 +151,11 @@ namespace Protocol
             logger.Log($"failed to validate server certificate: {sslPolicyErrors}");
             return false;
         }
+    }
+
+    public enum DeviceCapabilities
+    {
+        Simple = 0,
+        Router = 1
     }
 }
