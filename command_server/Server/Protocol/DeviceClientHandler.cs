@@ -89,6 +89,14 @@ namespace Server
                         continue;
                     }
                     //TODO
+
+                    //if (!client.IsConnected)
+                    //{
+                    //    server.Logger.Log("Connection closed remotely");
+                    //    server.OnHandlerFault(this);
+                    //    break;
+                    //}
+
                     server.Logger.Log("Error receiving message");
                     server.OnHandlerFault(this);
                     break;

@@ -42,12 +42,14 @@ namespace Terminal
             }
         }
 
+        static uint requestId=0;
         static void DoSend(DeviceClient device, string targetName, IEnumerable<string> commandParts)
         {
             try
             {
                 var command = string.Join(' ', commandParts);
-                device.Writer.SendMessage(new RequestMessage(1, targetName, Guid.Empty, Encoding.ASCII.GetBytes(command)));
+                requestId++;
+                device.Writer.SendMessage(new RequestMessage(requestId, targetName, Guid.Empty, Encoding.ASCII.GetBytes(command)));
                 var response = device.Reader.ReceiveMessage() as ResponseMessage;
                 var responseString = Encoding.ASCII.GetString(response.RequestData);
                 Console.WriteLine(responseString);

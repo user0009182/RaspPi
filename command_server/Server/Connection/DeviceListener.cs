@@ -27,9 +27,10 @@ namespace Server
             Task.Run(() => ThreadProc());
         }
 
+        TcpListener listener;
         void ThreadProc()
         {
-            var listener = new TcpListener(new IPEndPoint(IPAddress.Any, listenPort));
+            listener = new TcpListener(new IPEndPoint(IPAddress.Any, listenPort));
             listener.Start(10);
             server.WriteLog($"listening on port {listenPort} tls={tlsInfo.UseTls}");
             while (true)
@@ -67,6 +68,15 @@ namespace Server
                     server.WriteLog("exception accepting connecting device");
                 }
             });
+        }
+
+        internal void Stop()
+        {
+            if (listener != null)
+            {
+                listener.Server.Close();
+                listener.Stop();
+            }
         }
     }
 }

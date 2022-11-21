@@ -8,18 +8,20 @@ using Xunit;
 
 namespace Tests
 {
-    public class ConnectionTests
+    public class ConnectionTests : IDisposable
     {
+        Server.Server server;
+
         //TODO figure out why server ports have to be different in each test
         [Fact]
         public void NonTlsClientConnect()
         {
             var serverLog = new Logger();
-            var server = new Server.Server(null, serverLog);
+            server = new Server.Server(null, serverLog);
             server.Start(10001);
             var clientLog = new Logger();
             var client = new DeviceClient(clientLog);
-            client.Connect("localhost", 10001, new TlsInfo(false, "",""), Guid.NewGuid());
+            client.Connect("localhost", 10001, new TlsInfo(false, "", ""), Guid.NewGuid());
             Assert.Contains(serverLog.Data, l => l.Contains("server starting"));
             Assert.Contains(serverLog.Data, l => l.Contains("listening on port"));
             Assert.Contains(serverLog.Data, l => l.Contains("client connected"));
@@ -33,12 +35,12 @@ namespace Tests
         public void TlsClientConnect()
         {
             var serverLog = new Logger();
-            var server = new Server.Server(new TlsInfo(true, @"E:\git\tls\certificates\servercert.pem", @"E:\git\tls\certificates\serverkey.pem"), serverLog);
-            server.Start(10002);
+            server = new Server.Server(new TlsInfo(true, @"E:\git\tls\certificates\servercert.pem", @"E:\git\tls\certificates\serverkey.pem"), serverLog);
+            server.Start(10001);
             var clientLog = new Logger();
             var client = new DeviceClient(clientLog);
-            client.Connect("localhost", 10002, new TlsInfo(true, @"E:\git\tls\certificates\clientcert.pem", @"E:\git\tls\certificates\clientkey.pem"), Guid.NewGuid());
-            
+            client.Connect("localhost", 10001, new TlsInfo(true, @"E:\git\tls\certificates\clientcert.pem", @"E:\git\tls\certificates\clientkey.pem"), Guid.NewGuid());
+
             Assert.Contains(serverLog.Data, l => l.Contains("server starting"));
             Assert.Contains(serverLog.Data, l => l.Contains("listening on port"));
             Assert.Contains(serverLog.Data, l => l.Contains("client connected"));
@@ -55,15 +57,42 @@ namespace Tests
         public void MultiClientConnect()
         {
             var serverLog = new Logger();
-            var server = new Server.Server(null, serverLog);
-            server.Start(10003);
+            server = new Server.Server(null, serverLog);
+            server.Start(10001);
             var clientLog = new Logger();
             for (int i=0;i<5;i++)
             {
                 var client = new DeviceClient(clientLog);
-                client.Connect("localhost", 10003, new TlsInfo(false, "", ""), Guid.NewGuid());
+                client.Connect("localhost", 10001, new TlsInfo(false, "", ""), Guid.NewGuid());
             }
             Assert.Equal(5, server.GetConnectedDevices().Count);
+        }
+
+        [Fact]
+        public void RepeatedConnectDisconnect()
+        {
+            var serverLog = new Logger();
+            server = new Server.Server(null, serverLog);
+            server.Start(10001);
+            var clientLog = new Logger();
+            var clientId = new Guid("22345678-1234-1234-1234-123456789012");
+            var client = new DeviceClient(clientLog);
+            client.Connect("localhost", 10001, null, clientId);
+            client.Close();
+            //Task.Delay(5000).Wait();
+            client.Connect("localhost", 10001, null, clientId);
+            client.Close();
+            client.Connect("localhost", 10001, null, clientId);
+            //TODO test messages
+            Assert.Equal(1, server.GetConnectedDevices().Count);
+        }
+
+        public void Dispose()
+        {
+            if (server != null)
+            {
+                server.Shutdown();
+            }
         }
     }
 }

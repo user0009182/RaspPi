@@ -13,7 +13,7 @@ namespace Protocol
 {
     public class DeviceClient
     {
-        TcpClient client;
+        TcpClient tcpClient;
         SslStream sslStream;
         NetworkStream networkStream;
         DeviceProtocolReader reader;
@@ -44,6 +44,13 @@ namespace Protocol
         /// </summary>
         public string Name { get; private set; } = "unnamed";
         public DeviceCapabilities Capabilities { get; internal set; }
+        public bool IsConnected
+        {
+            get
+            {
+                return tcpClient.Connected;
+            }
+        }
 
         public DeviceClient(ILogger logger)
         {
@@ -61,7 +68,7 @@ namespace Protocol
         /// </summary>
         public void WrapTcpClient(TcpClient client, TlsInfo tlsInfo)
         {
-            this.client = client;
+            this.tcpClient = client;
             RemoteEndpoint = client.Client.RemoteEndPoint;
             networkStream = client.GetStream();
             Stream stream = null;
@@ -91,9 +98,10 @@ namespace Protocol
             {
                 sslStream.Close();
             }
-            if (client != null)
+            if (tcpClient != null)
             {
-                client.Close();
+                tcpClient.Client.Close();
+                tcpClient.Close();
             }
         }
 
@@ -105,10 +113,10 @@ namespace Protocol
             if (tlsInfo == null)
                 tlsInfo = new TlsInfo(false, "", "");
             logger.Log($"connecting to {hostname}:{port} tls:{tlsInfo.UseTls}");
-            client = new TcpClient(hostname, port);
+            tcpClient = new TcpClient(hostname, port);
             logger.Log($"connected to {hostname}:{port} tls:{tlsInfo.UseTls}");
-            RemoteEndpoint = client.Client.RemoteEndPoint;
-            networkStream = client.GetStream();
+            RemoteEndpoint = tcpClient.Client.RemoteEndPoint;
+            networkStream = tcpClient.GetStream();
             Stream stream;
             if (tlsInfo.UseTls)
             {
@@ -128,8 +136,8 @@ namespace Protocol
             }
             writer = new DeviceProtocolWriter(new BinaryWriter(stream));
             reader = new DeviceProtocolReader(new BinaryReader(stream));
-            reader.SetTimeout(30000);
-            writer.SetTimeout(30000);
+            reader.SetTimeout(10000);
+            writer.SetTimeout(10000);
             var handshake = new DeviceHandshake(logger);
             logger.Log($"begin handshake with server");
             bool success = handshake.DoHandshakeAsClient(this, ownDeviceId);

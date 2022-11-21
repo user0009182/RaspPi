@@ -52,6 +52,15 @@ namespace Server
             commandHandler.Start();
         }
 
+        public void Shutdown()
+        {
+            listener.Stop();
+            //foreach (var handler in connectedDevices.Values)
+            //{
+            //    handler.Shutdown();
+            //}
+        }
+
         public void CreateDeviceClientHandler(DeviceClient client)
         {
             lock (connectedDevices)
