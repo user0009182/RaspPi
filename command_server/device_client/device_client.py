@@ -200,6 +200,9 @@ class DeviceClient:
     #the WIFI network name and secret must be written to w.dat on the device (see write_wifi.py)
     #this function will block and try to remain connected to both the WIFI and the command server
     def start(self, server_host, server_port):
+        self.__led_out.on()
+        time.sleep(0.5)
+        self.__led_out.off()
         (n, p) = self.__get_wifi_info()
         self.__wifi = __DeviceWifi(n, p, self.__logger)
         self.__server = __ServerConnection(self.__wifi, self.__logger)
