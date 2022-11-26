@@ -1,0 +1,27 @@
+﻿@page "/"
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<PageTitle>Home</PageTitle>
+
+<h1></h1>
+
+<p>
+    @userAuthenticated
+</p>
+
+@code {
+    string userAuthenticated;
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        //if (user.Identity.IsAuthenticated)
+        //{
+        //    userAuthenticated = $"{user.Identity.Name} is authenticated.";
+        //}
+        //else
+        //{
+        //    userAuthenticated = "The user is NOT authenticated.";
+        //}
+    }
+}
