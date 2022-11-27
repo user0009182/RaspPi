@@ -1,0 +1,25 @@
+﻿@page "/camera"
+@using HttpServer.Data
+@using Protocol
+@inject DeviceClientService DeviceClientService
+
+<PageTitle>Camera</PageTitle>
+
+@*<h1>Camera</h1>*@
+
+<button class="btn btn-primary" @onclick="GetImage">Refresh</button>
+
+<img src="data:image/jpeg;base64,@Convert.ToBase64String(@imageData)" />
+
+<p role="status">Response: @responseText</p>
+
+@code {
+    private string responseText = "";
+    private byte[] imageData = new byte[0];
+
+    void GetImage()
+    {
+        responseText = DeviceClientService.SendStringCommand("camera", "get_image").Result;
+        imageData = Convert.FromBase64String(responseText);
+    }
+}
