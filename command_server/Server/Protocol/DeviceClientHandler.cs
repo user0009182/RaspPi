@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace Server
 {
-    class DeviceClientHandler
+    public class DeviceClientHandler
     {
         BlockingCollection<BaseMessage> sendQueue = new BlockingCollection<BaseMessage>();
         DeviceClient client;

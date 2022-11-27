@@ -126,7 +126,7 @@ namespace Protocol
         /// <summary>
         /// Create a new connection as a client
         /// </summary>
-        public void Connect(string hostname, int port, TlsInfo tlsInfo, Guid ownDeviceId) // bool tls, string clientCertificateFilePath, string clientKeyPath)
+        public bool Connect(string hostname, int port, TlsInfo tlsInfo, Guid ownDeviceId) // bool tls, string clientCertificateFilePath, string clientKeyPath)
         {
             if (tlsInfo == null)
                 tlsInfo = new TlsInfo(false, "", "");
@@ -162,9 +162,10 @@ namespace Protocol
             if (!success)
             {
                 logger.Log($"handshake with server failed");
-                return;
+                return false;
             }
             logger.Log($"handshake with server complete");
+            return true;
         }
 
         private bool ValidateServerCertificate(object sender, X509Certificate? certificate, X509Chain? chain, SslPolicyErrors sslPolicyErrors)

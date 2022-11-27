@@ -37,11 +37,13 @@ namespace Server
 
         void ThreadProc()
         {
-            while (true)
+            while (!cancellationSource.IsCancellationRequested)
             {
                 try
                 {
                     var message = incomingMessageQueue.Take(cancellationToken);
+                    if (cancellationSource.IsCancellationRequested)
+                        break;
                     ProcessMessage(message);
                 }
                 catch (OperationCanceledException)
@@ -78,16 +80,7 @@ namespace Server
             //determine target device_id of request
             if (request.TargetDeviceName != null)
             {
-                var targetDevice = server.GetConnectedDevices().FirstOrDefault(f => f.Name.Equals(request.TargetDeviceName, StringComparison.CurrentCultureIgnoreCase));
-                if (targetDevice != null)
-                {
-                    targetId = targetDevice.DeviceId;
-                }
-                else
-                {
-                    logger.Log($"target {request.TargetDeviceName} not found");
-                }
-                //targetId = server.Router.GetDeviceIdByName(request.TargetDeviceName);
+                targetId = server.Router.ResolveDeviceId(request.TargetDeviceName);
             }
             
             var handler = server.GetConnectedDevice(targetId);
@@ -109,7 +102,7 @@ namespace Server
 
             uint requestId = server.GenerateRequestId();
             server.RoutedRequestTable.AddEntry(requestId, targetId, request.SourceDeviceId, request.RequestId);
-            var newRequest = new RequestMessage(requestId, "", targetId, request.RequestData);
+            var newRequest = new RequestMessage(requestId, request.TargetDeviceName, targetId, request.RequestData);
             handler.SendQueue.Add(newRequest);
         }
 

@@ -14,9 +14,29 @@ namespace Server
             this.server = server;
         }
 
-        public Guid GetDeviceIdByName(string name)
+        public bool UseForwarding;
+
+        public Guid ResolveDeviceId(string deviceName)
         {
-            return Guid.Empty;
+            Guid targetId = Guid.Empty;
+            if (UseForwarding)
+            {
+                var home = server.GetConnectedDevices().FirstOrDefault(d => d.Name == "home");
+                if (home != null)
+                    return home.DeviceId;
+                return targetId;
+            }
+            var targetDevice = server.GetConnectedDevices().FirstOrDefault(f => f.Name.Equals(deviceName, StringComparison.CurrentCultureIgnoreCase));
+            if (targetDevice != null)
+            {
+                targetId = targetDevice.DeviceId;
+                return targetId;
+            }
+            else
+            {
+                server.Logger.Log($"target {deviceName} not found");
+                return Guid.Empty;
+            }
         }
     }
 }

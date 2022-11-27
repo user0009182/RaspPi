@@ -20,6 +20,7 @@ namespace Server
         ResponseTimeoutThread responseTimeoutThread;
         ServerCommandHandler commandHandler;
         public RoutedRequestTable RoutedRequestTable { get; }
+        public OutgoingConnectionProcessor OutgoingConnectionProcessor { get; }
 
         ILogger logger;
         TlsInfo tlsInfo;
@@ -47,21 +48,19 @@ namespace Server
             incomingMessageProcessor = new IncomingMessageProcessor(this, receivedMessageQueue, logger);
             responseTimeoutThread = new ResponseTimeoutThread(this, RoutedRequestTable, logger);
             commandHandler = new ServerCommandHandler(this, logger);
+            OutgoingConnectionProcessor = new OutgoingConnectionProcessor(this, logger);
             incomingMessageProcessor.Start();
             responseTimeoutThread.Start();
             commandHandler.Start();
+            OutgoingConnectionProcessor.Start();
         }
 
         public void Shutdown()
         {
             listener.Stop();
-            //foreach (var handler in connectedDevices.Values)
-            //{
-            //    handler.Shutdown();
-            //}
         }
 
-        public void CreateDeviceClientHandler(DeviceClient client)
+        public DeviceClientHandler CreateDeviceClientHandler(DeviceClient client)
         {
             lock (connectedDevices)
             {
@@ -69,6 +68,7 @@ namespace Server
                 handler.Start();
                 connectedDevices.Add(client.RemoteDeviceId, handler);
                 nextSessionId++;
+                return handler;
             }
         }
 
@@ -118,6 +118,7 @@ namespace Server
         {
             WriteLog($"closing session {handler.SessionId} - fault detected");
             handler.Shutdown();
+            OutgoingConnectionProcessor.OnDisconnect(handler);
             RemoveConnectedClient(handler);
         }
 

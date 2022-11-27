@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Protocol;
+using System;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Net.Sockets;
@@ -7,18 +8,27 @@ namespace Server
 {
     class Program
     {
-        static int boundSessionId=-1;
-        static ConnectorRepository connectors = new ConnectorRepository();
         static void Main(string[] args)
         {
-            var server = new Server(null, new Logger());
-            server.Start(21008);
+            int defaultListenPort = 21008;
+            int listenPort = args.Length > 0 ? Convert.ToInt32(args[0]) : defaultListenPort;
+
+            var tlsInfo = new TlsInfo(true, @"E:\git\tls\certificates\servercert.pem", @"E:\git\tls\certificates\serverkey.pem");
+            var server = new Server(tlsInfo, new Logger());
+
+            if (listenPort == 21008)
+            {
+                server.OutgoingConnectionProcessor.RegisterOutgoingConnection("localhost", 21007, new TlsInfo(true, @"E:\git\tls\certificates\clientcert.pem", @"E:\git\tls\certificates\clientkey.pem"));
+            }
+
+            server.Start(listenPort);
             
             while (true)
             {
                 Console.Write("> ");
                 var command = Console.ReadLine().ToLower();
-                //ProcessCommand(server, command);
+                if (command == "exit")
+                    break;
             }
         }
 
