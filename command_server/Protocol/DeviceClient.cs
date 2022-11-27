@@ -40,9 +40,15 @@ namespace Protocol
         public EndPoint RemoteEndpoint { get; private set; }
 
         /// <summary>
-        /// Name of the device. This is initially provided by the device itself. It isn't guaranteed to be unique.
+        /// Name of the remote device. This is initially provided by the device itself. It isn't guaranteed to be unique.
         /// </summary>
-        public string Name { get; private set; } = "unnamed";
+        public string RemoteName { get; private set; } = "unnamed";
+
+        /// <summary>
+        /// Name the local device
+        /// </summary>
+        public string LocalName { get; private set; } = "unnamed";
+
         public DeviceCapabilities Capabilities { get; internal set; }
         public bool IsConnected
         {
@@ -52,14 +58,15 @@ namespace Protocol
             }
         }
 
-        public DeviceClient(ILogger logger)
+        public DeviceClient(string localName, ILogger logger)
         {
+            this.LocalName = localName;
             this.logger = logger;
         }
 
-        public void AssignName(string name)
+        internal void AssignRemoteName(string name)
         {
-            Name = name;
+            RemoteName = name;
         }
 
         /// <summary>

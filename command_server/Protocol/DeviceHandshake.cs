@@ -14,7 +14,7 @@ namespace Protocol
             this.logger = logger;
         }
 
-        public bool DoHandshakeAsServer(DeviceClient client, Guid serverDeviceId, string servername)
+        public bool DoHandshakeAsServer(DeviceClient client, Guid serverDeviceId)
         {
             try
             {
@@ -29,11 +29,11 @@ namespace Protocol
                 client.Capabilities = (DeviceCapabilities)client.Reader.ReadBytes(1)[0];
                 client.RemoteDeviceId = new Guid(client.Reader.ReadBytes(16));
                 var clientDeviceName = Encoding.ASCII.GetString(client.Reader.ReadData8());
-                client.AssignName(clientDeviceName);
+                client.AssignRemoteName(clientDeviceName);
                 client.Writer.WriteBytes(new byte[] { (byte)DeviceCapabilities.Router });
                 //send 16 byte device ID
                 client.Writer.WriteBytes(serverDeviceId.ToByteArray());
-                client.Writer.WriteData8(Encoding.ASCII.GetBytes(servername));
+                client.Writer.WriteData8(Encoding.ASCII.GetBytes(client.LocalName));
                 data = client.Reader.ReadBytes(2);
                 if (data == null)
                     return false;
@@ -61,11 +61,12 @@ namespace Protocol
                 client.Writer.WriteBytes(new byte[] { (byte)DeviceCapabilities.Router });
                 //send 16 byte device ID
                 client.Writer.WriteBytes(serverDeviceId.ToByteArray());
-                client.Writer.WriteData8(Encoding.ASCII.GetBytes(client.Name));
+                client.Writer.WriteData8(Encoding.ASCII.GetBytes(client.LocalName));
                 client.Capabilities = (DeviceCapabilities)client.Reader.ReadBytes(1)[0];
                 client.RemoteDeviceId = new Guid(client.Reader.ReadBytes(16));
                 var serverName = Encoding.ASCII.GetString(client.Reader.ReadData8());
                 logger.Log($"connected to device {serverName} {client.RemoteDeviceId}");
+                client.AssignRemoteName(serverName);
                 client.Writer.WriteBytes(Encoding.ASCII.GetBytes("ok"));
             }
             catch (Exception)

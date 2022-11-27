@@ -14,7 +14,7 @@ namespace Server
             int listenPort = args.Length > 0 ? Convert.ToInt32(args[0]) : defaultListenPort;
 
             var tlsInfo = new TlsInfo(true, @"E:\git\tls\certificates\servercert.pem", @"E:\git\tls\certificates\serverkey.pem");
-            var server = new Server(tlsInfo, new Logger());
+            var server = new Server("server", tlsInfo, new Logger());
 
             if (listenPort == 21008)
             {

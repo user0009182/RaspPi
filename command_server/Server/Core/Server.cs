@@ -35,9 +35,11 @@ namespace Server
         public MessageRouter Router { get; }
         public Guid DeviceId { get; }
         public BlockingCollection<RequestMessage> CommandQueue { get; internal set; } = new BlockingCollection<RequestMessage>();
+        public string Name { get; }
 
-        public Server(TlsInfo tlsInfo, ILogger logger)
+        public Server(string name, TlsInfo tlsInfo, ILogger logger)
         {
+            Name = name;
             if (tlsInfo == null)
                 tlsInfo = new TlsInfo(false, "", "");
             this.tlsInfo = tlsInfo;
@@ -79,7 +81,7 @@ namespace Server
             {
                 foreach (var entry in connectedDevices)
                 {
-                    ret.Add(new ConnectedDeviceInfo(entry.Value.Client.Name, entry.Key, entry.Value.RemoteEndpoint.ToString()));
+                    ret.Add(new ConnectedDeviceInfo(entry.Value.Client.RemoteName, entry.Key, entry.Value.RemoteEndpoint.ToString()));
                 }
             }
             return ret;

@@ -19,7 +19,7 @@ namespace Terminal
                 host = args[1];
                 port = Convert.ToInt32(args[2]);
             }
-            var device = new DeviceClient(new Logger());
+            var device = new DeviceClient("Terminal", new Logger());
             device.Connect(host, port, null, Guid.Empty);
             Console.WriteLine($"connected to {host}:{port}");
             while (true)

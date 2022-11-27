@@ -47,11 +47,11 @@ namespace Server
             {
                 try
                 {
-                    DeviceClient client = new DeviceClient(server.Logger);
+                    DeviceClient client = new DeviceClient(server.Name, server.Logger);
                     client.WrapTcpClient(tcpClient, tlsInfo);
                     server.Logger.Log($"begin handshake with connecting device");
                     var handshake = new DeviceHandshake(server.Logger);
-                    var success = handshake.DoHandshakeAsServer(client, server.DeviceId, "servername");
+                    var success = handshake.DoHandshakeAsServer(client, server.DeviceId);
                     if (!success)
                     {
                         server.WriteLog("handshake with connecting device failed");
@@ -59,7 +59,7 @@ namespace Server
                         return;
                     }
                     server.WriteLog("handshake with connecting device complete");
-                    server.WriteLog($"{client.Name} {client.RemoteDeviceId} {client.RemoteEndpoint}");
+                    server.WriteLog($"{client.RemoteName} {client.RemoteDeviceId} {client.RemoteEndpoint}");
                     server.CreateDeviceClientHandler(client);
                     return;
                 }

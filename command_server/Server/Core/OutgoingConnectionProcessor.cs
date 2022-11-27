@@ -84,7 +84,7 @@ namespace Server
         {
             try
             {
-                var client = new DeviceClient(logger);
+                var client = new DeviceClient(server.Name, logger);
                 var success = client.Connect(connection.Host, connection.Port, connection.TlsInfo, server.DeviceId);
                 if (!success)
                 {

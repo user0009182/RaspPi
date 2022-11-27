@@ -14,14 +14,14 @@ namespace Server
             this.server = server;
         }
 
-        public bool UseForwarding;
+        public string ForwardServerName = null;
 
         public Guid ResolveDeviceId(string deviceName)
         {
             Guid targetId = Guid.Empty;
-            if (UseForwarding)
+            if (ForwardServerName != null)
             {
-                var home = server.GetConnectedDevices().FirstOrDefault(d => d.Name == "home");
+                var home = server.GetConnectedDevices().FirstOrDefault(d => d.Name.ToLower() == ForwardServerName);
                 if (home != null)
                     return home.DeviceId;
                 return targetId;
