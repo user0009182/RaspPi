@@ -8,14 +8,16 @@ namespace HttpServer.Auth
     public class MemStore : IUserStore<User>, IUserPasswordStore<User>
     {
         Dictionary<string, User> users = new Dictionary<string, User>();
+        Dictionary<string, string> userHashes = new Dictionary<string, string>();
         public MemStore()
         {
-            AddUser("user@a.com", "AQAAAAEAACcQAAAAEJZzn8Gbi5yk7Y4BAydV2Rt0O6K3axRhPxgk+ycZLXDxo6X9fIWbyHpNsOGOlT0gxA==");
+            AddUser("user@a.com", "AQAAAAEAACcQAAAAENl9Q0KXmLUjbk7IjAVB1Ks+LUcHl6oQ7y7VxeUl40Vqxv95XtlZaz5C6o5x2lbsNQ==");
         }
 
         void AddUser(string username, string passwordHash)
         {
-            users.Add(username.ToLower(), new User(username, passwordHash));
+            users.Add(username.ToLower(), new User(username));
+            userHashes.Add(username.ToLower(), passwordHash);
         }
 
         public Task<IdentityResult> CreateAsync(User user, CancellationToken cancellationToken)
@@ -40,7 +42,7 @@ namespace HttpServer.Auth
 
         public Task<User> FindByNameAsync(string normalizedUserName, CancellationToken cancellationToken)
         {
-            return FindByIdAsync(normalizedUserName, cancellationToken);
+            return FindByIdAsync(normalizedUserName.ToLower(), cancellationToken);
         }
 
         public Task<string> GetNormalizedUserNameAsync(User user, CancellationToken cancellationToken)
@@ -80,7 +82,7 @@ namespace HttpServer.Auth
 
         public async Task<string> GetPasswordHashAsync(User user, CancellationToken cancellationToken)
         {
-            return "AQAAAAEAACcQAAAAEJZzn8Gbi5yk7Y4BAydV2Rt0O6K3axRhPxgk+ycZLXDxo6X9fIWbyHpNsOGOlT0gxA==";
+            return userHashes[user.Name];
         }
 
         public Task<bool> HasPasswordAsync(User user, CancellationToken cancellationToken)
@@ -92,12 +94,10 @@ namespace HttpServer.Auth
     public class User
     {
         public string Name { get; set; }
-        public string PasswordHash { get; set; }
 
-        public User(string name, string passwordHash)
+        public User(string name)
         {
             this.Name = name;
-            this.PasswordHash = passwordHash;
         }
     }
 }

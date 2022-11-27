@@ -7,9 +7,10 @@ using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.VisualBasic;
+using System.Security.Cryptography.X509Certificates;
 
 var builder = WebApplication.CreateBuilder(args);
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 var identity = builder.Services.AddDefaultIdentity<User>(options => options.SignIn.RequireConfirmedAccount = false);
 
@@ -21,13 +22,30 @@ builder.Services.AddServerSideBlazor();
 builder.Services.AddScoped<AuthenticationStateProvider, RevalidatingIdentityAuthenticationStateProvider<User>>();
 builder.Services.AddSingleton<DeviceClientService>();
 
+builder.WebHost.ConfigureKestrel(serverOptions =>
+{
+    serverOptions.ConfigureHttpsDefaults(options =>
+    {
+        var certificate = X509Certificate2.CreateFromPemFile("servercert.pem", "serverkey.pem");
+        var serverCertificate2 = new X509Certificate2(certificate.Export(X509ContentType.Pkcs12));
+        options.ServerCertificate = serverCertificate2;
+    });
+
+    //serverOptions.ConfigureEndpointDefaults(listenOptions =>
+    //{
+    //    listenOptions.
+    //});
+});
+
+
+
 var app = builder.Build();
 
-//can be used to generate a new user's hash
-//var hash = generatePasswordHash(app, "a@a.com", "abcdefg");
+//can be used to generate hash for new user
+//var hash = generatePasswordHash(app, "user@a.com", "abcdefg");
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+ if (app.Environment.IsDevelopment())
 {
     app.UseMigrationsEndPoint();
 }
