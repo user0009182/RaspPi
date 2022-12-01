@@ -58,6 +58,36 @@ namespace Protocol
             }
         }
 
+        public IdleTimeoutPolicy IdleTimeoutPolicy { get; private set; } = new IdleTimeoutPolicy(30, false);
+
+        public void SetIdleTimeoutPolicy(int idleTimeoutInterval, bool sendKeepaliveResponses)
+        {
+            IdleTimeoutPolicy = new IdleTimeoutPolicy(idleTimeoutInterval, sendKeepaliveResponses);
+        }
+
+        public BaseMessage TryReadMessage(int timeout)
+        {
+            if (timeout < 1)
+                timeout = 1;
+            SetRecvTimeout(timeout);
+            try
+            {
+                return Reader.ReceiveMessage();
+            }
+            catch (Exception e)
+            {
+                if (DeviceProtocolException.IsSocketTimeoutException(e))
+                {
+                    return null;
+                }
+                else
+                {
+                    throw;
+                }
+            }
+            
+        }
+
         public DeviceClient(string localName, ILogger logger)
         {
             this.LocalName = localName;
@@ -161,6 +191,7 @@ namespace Protocol
             }
             writer = new DeviceProtocolWriter(new BinaryWriter(stream));
             reader = new DeviceProtocolReader(new BinaryReader(stream));
+            //TODO default values
             reader.SetTimeout(10000);
             writer.SetTimeout(10000);
             var handshake = new DeviceHandshake(logger);
@@ -173,6 +204,16 @@ namespace Protocol
             }
             logger.Log($"handshake with server complete");
             return true;
+        }
+
+        public void SetSendTimeout(int timeout)
+        {
+            writer.SetTimeout(timeout);
+        }
+
+        public void SetRecvTimeout(int timeout)
+        {
+            reader.SetTimeout(timeout);
         }
 
         private bool ValidateServerCertificate(object sender, X509Certificate? certificate, X509Chain? chain, SslPolicyErrors sslPolicyErrors)
@@ -191,5 +232,17 @@ namespace Protocol
     {
         Simple = 0,
         Router = 1
+    }
+
+    public struct IdleTimeoutPolicy
+    {
+        public int Interval;
+        public bool SendKeepaliveResponses;
+
+        public IdleTimeoutPolicy(int interval, bool sendKeepaliveResponses)
+        {
+            Interval = interval;
+            SendKeepaliveResponses = sendKeepaliveResponses;
+        }
     }
 }

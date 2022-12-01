@@ -26,9 +26,17 @@ namespace Protocol
                 case DeviceProtocolMessageType.Response:
                     SendResponseMessage(message as ResponseMessage);
                     break;
+                case DeviceProtocolMessageType.KeepAlive:
+                    SendKeepAliveMessage(message as KeepAliveMessage);
+                    break;
                 default:
                     throw new DeviceProtocolException($"Attempted to write unknown message type {message.Type}");
             }
+        }
+
+        private void SendKeepAliveMessage(KeepAliveMessage keepAliveMessage)
+        {
+            WriteMessageType(DeviceProtocolMessageType.KeepAlive);
         }
 
         void SendRequestMessage(RequestMessage message)
@@ -49,6 +57,11 @@ namespace Protocol
             }
             writer.Write((uint)message.RequestData.Length);
             writer.Write(message.RequestData);
+        }
+
+        internal void WriteByte(byte n)
+        {
+            WriteBytes(new byte[] { n });
         }
 
         void SendResponseMessage(ResponseMessage message)
@@ -87,6 +100,11 @@ namespace Protocol
         internal void WriteBytes(byte[] data)
         {
             writer.Write(data);
+        }
+
+        internal void WriteUInt16(ushort value)
+        {
+            writer.Write(value);
         }
     }
 }

@@ -48,6 +48,7 @@ namespace Server
                 try
                 {
                     DeviceClient client = new DeviceClient(server.Name, server.Logger);
+                    client.SetIdleTimeoutPolicy(10, true);
                     client.WrapTcpClient(tcpClient, tlsInfo);
                     server.Logger.Log($"begin handshake with connecting device");
                     var handshake = new DeviceHandshake(server.Logger);
@@ -60,7 +61,7 @@ namespace Server
                     }
                     server.WriteLog("handshake with connecting device complete");
                     server.WriteLog($"{client.RemoteName} {client.RemoteDeviceId} {client.RemoteEndpoint}");
-                    server.CreateDeviceClientHandler(client);
+                    var handler = server.CreateDeviceClientHandler(client);
                     return;
                 }
                 catch (Exception)

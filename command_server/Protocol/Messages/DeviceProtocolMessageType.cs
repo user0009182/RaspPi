@@ -3,6 +3,7 @@
     public enum DeviceProtocolMessageType
     { 
         Request,
-        Response
+        Response,
+        KeepAlive
     }
 }

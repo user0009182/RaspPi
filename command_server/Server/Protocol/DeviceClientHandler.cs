@@ -18,6 +18,7 @@ namespace Server
         bool shutdown;
         CancellationToken cancellationToken;
         CancellationTokenSource cancellationSource = new CancellationTokenSource();
+        DateTime lastRemoteContact = DateTime.MinValue;
 
         public DeviceClient Client
         {
@@ -61,16 +62,6 @@ namespace Server
             Task.Run(() => SendThread());
         }
 
-        bool IsSocketTimeoutException(Exception e)
-        {
-            if (!(e is IOException))
-                return false;
-            var socketException = e.InnerException as SocketException;
-            if (socketException == null)
-                return false;
-            return socketException.SocketErrorCode == SocketError.TimedOut;
-        }
-
         void RecvThread()
         {
             while (!shutdown)
@@ -78,14 +69,29 @@ namespace Server
                 try
                 {
                     var message = client.Reader.ReceiveMessage();
+                    lastRemoteContact = DateTime.Now;
+                    if (message.Type == DeviceProtocolMessageType.KeepAlive)
+                    {
+                        server.WriteLog("received keepalive response");
+                        //consume keepalives
+                        continue;
+                    }
                     //tag the message with the ID of the device it was sent from
                     message.SourceDeviceId = client.RemoteDeviceId;
                     receiveQueue.Add(message);
                 }
                 catch (Exception e)
                 {
-                    if (IsSocketTimeoutException(e))
+                    if (DeviceProtocolException.IsSocketTimeoutException(e))
                     {
+                        if (client.IdleTimeoutPolicy.SendKeepaliveResponses)
+                        {
+                            if (DateTime.Now.Subtract(lastRemoteContact).TotalSeconds > client.IdleTimeoutPolicy.Interval)
+                            {
+                                server.WriteLog("idle timeout triggered");
+                                server.OnHandlerFault(this);
+                            }
+                        }
                         continue;
                     }
                     //TODO
@@ -104,15 +110,56 @@ namespace Server
             }
         }
 
+        bool SendKeepAlives
+        {
+            get
+            {
+                return KeepAliveInterval > 0;
+            }
+        }
+
+        int KeepAliveInterval
+        {
+            get
+            {
+                return client.IdleTimeoutPolicy.Interval / 2 + 1;
+            }
+        }
+
+        DateTime nextKeepAlive;
+        int SecondsUntilNextKeepalive()
+        {
+            if (!SendKeepAlives)
+            {
+                return -1; //infinite
+            }
+            return Math.Max(0, (int)nextKeepAlive.Subtract(DateTime.Now).TotalSeconds);
+        }
+
         void SendThread()
         {
+            if (SendKeepAlives)
+            {
+                nextKeepAlive = DateTime.Now.AddSeconds(KeepAliveInterval);
+            }
             try
             {
                 //wait a message to send
                 while (!shutdown)
                 {
-                    var message = sendQueue.Take(cancellationToken);
-                    client.Writer.SendMessage(message);
+                    BaseMessage message;
+                    int waitTime = SecondsUntilNextKeepalive() * 1000;
+                    var messageReceived = sendQueue.TryTake(out message, waitTime, cancellationToken);
+                    if (messageReceived)
+                    {
+                        client.Writer.SendMessage(message);
+                    }
+                    
+                    if (SendKeepAlives && SecondsUntilNextKeepalive() < 1)
+                    {
+                        SendQueue.Add(new KeepAliveMessage());
+                        nextKeepAlive = DateTime.Now.AddSeconds(KeepAliveInterval);
+                    }
                 }
             }
             catch (OperationCanceledException)

@@ -114,8 +114,11 @@ namespace Server
             lock (outgoingConnections)
             {
                 var connection = outgoingConnections.FirstOrDefault(c => c.Handler == handler);
-                connection.SetHandler(null);
-                retryCancellationSource.Cancel();
+                if (connection != null)
+                {
+                    connection.SetHandler(null);
+                    retryCancellationSource.Cancel();
+                }
             }
         }
     }

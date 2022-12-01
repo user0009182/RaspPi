@@ -25,6 +25,7 @@ namespace Protocol
                 if (Encoding.ASCII.GetString(data) != "device")
                     return false;
                 //TODO timeout catch IOException on receive?
+                //write "server"
                 client.Writer.WriteData16(Encoding.ASCII.GetBytes("server"));
                 client.Capabilities = (DeviceCapabilities)client.Reader.ReadBytes(1)[0];
                 client.RemoteDeviceId = new Guid(client.Reader.ReadBytes(16));
@@ -34,6 +35,11 @@ namespace Protocol
                 //send 16 byte device ID
                 client.Writer.WriteBytes(serverDeviceId.ToByteArray());
                 client.Writer.WriteData8(Encoding.ASCII.GetBytes(client.LocalName));
+                //idle timeout interval in seconds. 0 = off
+                //the hub will send keep alive packets frequently enough
+                client.Writer.WriteUInt16(10);
+                //whether the device should reply to keepalives
+                client.Writer.WriteByte(1);
                 data = client.Reader.ReadBytes(2);
                 if (data == null)
                     return false;
@@ -67,6 +73,12 @@ namespace Protocol
                 var serverName = Encoding.ASCII.GetString(client.Reader.ReadData8());
                 logger.Log($"connected to device {serverName} {client.RemoteDeviceId}");
                 client.AssignRemoteName(serverName);
+                //idle timeout interval in seconds. 0 = off
+                //the hub will send keep alive packets frequently enough
+                ushort idleTimeoutInterval = client.Reader.ReadUInt16();
+                //whether the device should reply to keepalives
+                bool replyToKeepalives = client.Reader.ReadBytes(1)[0] > 0;
+                client.SetIdleTimeoutPolicy(idleTimeoutInterval, replyToKeepalives);
                 client.Writer.WriteBytes(Encoding.ASCII.GetBytes("ok"));
             }
             catch (Exception)

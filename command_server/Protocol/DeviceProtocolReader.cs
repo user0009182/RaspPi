@@ -24,6 +24,8 @@ namespace Protocol
                     return ReceiveRequestMessage();
                 case DeviceProtocolMessageType.Response:
                     return ReceiveResponseMessage();
+                case DeviceProtocolMessageType.KeepAlive:
+                    return new KeepAliveMessage();
                 default:
                     throw new DeviceProtocolException($"Unrecognised message type {messageType}");
             }
@@ -84,6 +86,11 @@ namespace Protocol
             ushort dataLength = reader.ReadByte();
             var data = reader.ReadBytes(dataLength);
             return data;
+        }
+
+        internal ushort ReadUInt16()
+        {
+            return reader.ReadUInt16();
         }
 
         DeviceProtocolMessageType ReadMessageType()
