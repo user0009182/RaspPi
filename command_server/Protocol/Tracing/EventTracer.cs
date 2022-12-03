@@ -2,6 +2,10 @@
 
 namespace Protocol
 {
+    /// <summary>
+    /// Helper class for writing trace events to a given sink
+    /// Provides simpler methods
+    /// </summary>
     public class EventTracer
     {
         Dictionary<TraceEventType, bool> typeEnabled = new Dictionary<TraceEventType, bool>();
@@ -48,6 +52,7 @@ namespace Protocol
 
         public void Trace(TraceEventType type, TraceEventId eventId, params string[] args)
         {
+            //only trace the event if the sink wants this type of event
             if (!IsEventTypeTraced(type))
                 return;
             sink.OnEvent(new TraceEvent(type, eventId, args));

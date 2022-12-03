@@ -2,9 +2,8 @@
 {
     public enum TraceEventType
     {
-        Info,
-        Flow,        //useful 
-        Detail,
+        Flow,        //useful for seeing normal application flow 
+        Detail,      //more detailed information than flow, but less so than debug
         Failure,     //expected handled failure
         Error,       //unexpected error in processing
         Debug,       //very detailed information, usually superfluous

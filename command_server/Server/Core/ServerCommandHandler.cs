@@ -5,14 +5,14 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Server
+namespace Hub
 {
     class ServerCommandHandler
     {
-        Server server;
+        Hub server;
         EventTracer trace;
 
-        public ServerCommandHandler(Server server, EventTracer tracer)
+        public ServerCommandHandler(Hub server, EventTracer tracer)
         {
             this.server = server;
             this.trace = tracer;

@@ -7,9 +7,14 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading.Tasks;
 
-namespace Server
+namespace Hub
 {
-    public class Server
+    /// <summary>
+    /// A Hub is a listening TCP server that devices can connect to
+    /// It performs message routing between connected devices
+    /// It also acts like a device itself - a hub can be connected to another hub or sent commands from a connected device
+    /// </summary>
+    public class Hub
     {
         DeviceListener listener;
         int nextSessionId = 0;
@@ -29,7 +34,7 @@ namespace Server
         public BlockingCollection<RequestMessage> CommandQueue { get; internal set; } = new BlockingCollection<RequestMessage>();
         public string Name { get; }
 
-        public Server(string name, TlsInfo tlsInfo, ITraceSink traceSink)
+        public Hub(string name, TlsInfo tlsInfo, ITraceSink traceSink)
         {
             Name = name;
             if (tlsInfo == null)

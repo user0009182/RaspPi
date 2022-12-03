@@ -7,14 +7,14 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Server
+namespace Hub
 {
     class DeviceListener
     {
         int listenPort;
-        Server server;
+        Hub server;
         TlsInfo tlsInfo;
-        public DeviceListener(int listenPort, Server server, TlsInfo tlsInfo)
+        public DeviceListener(int listenPort, Hub server, TlsInfo tlsInfo)
         {
             this.listenPort = listenPort;
             this.server = server;

@@ -7,14 +7,14 @@ using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Server
+namespace Hub
 {
     public class DeviceClientHandler
     {
         BlockingCollection<BaseMessage> sendQueue = new BlockingCollection<BaseMessage>();
         DeviceClient client;
         BlockingCollection<BaseMessage> receiveQueue;
-        Server server;
+        Hub server;
         bool shutdown;
         CancellationToken cancellationToken;
         CancellationTokenSource cancellationSource = new CancellationTokenSource();
@@ -36,7 +36,7 @@ namespace Server
             }
         }
 
-        public DeviceClientHandler(DeviceClient client, int sessionId, Server server, BlockingCollection<BaseMessage> receiveQueue)
+        public DeviceClientHandler(DeviceClient client, int sessionId, Hub server, BlockingCollection<BaseMessage> receiveQueue)
         {
             this.client = client;
             this.receiveQueue = receiveQueue;

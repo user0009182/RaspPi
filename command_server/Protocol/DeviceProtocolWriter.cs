@@ -8,6 +8,9 @@ using System.Threading.Tasks;
 
 namespace Protocol
 {
+    /// <summary>
+    /// Provides methods to write device protocol messages over a connection to a remote device or hub
+    /// </summary>
     public class DeviceProtocolWriter
     {
         BinaryWriter writer;

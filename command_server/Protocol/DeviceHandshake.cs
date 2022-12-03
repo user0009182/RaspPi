@@ -6,6 +6,9 @@ using System.Threading.Tasks;
 
 namespace Protocol
 {
+    /// <summary>
+    /// Implementation of the protocol connection handshake from both the server and client side
+    /// </summary>
     public class DeviceHandshake
     {
         EventTracer trace;

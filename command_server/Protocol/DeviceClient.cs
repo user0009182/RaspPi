@@ -11,6 +11,11 @@ using System.Threading.Tasks;
 
 namespace Protocol
 {
+    /// <summary>
+    /// Client for the device protocol
+    /// Provides methods to behave like a device, such as to connect to another device (including a hub) and read and write 
+    /// messages to and from the remote device
+    /// </summary>
     public class DeviceClient
     {
         TcpClient tcpClient;

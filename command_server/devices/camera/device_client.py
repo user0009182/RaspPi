@@ -60,6 +60,7 @@ class __ServerConnection:
         self.__logger = logger
         self.__wifi = wifi
         self.__socket = None
+        self.__max_recv_length = 64
     def retry_until_connected(self, ip, port, device_name):
         addr = socket.getaddrinfo(ip, port)[0][-1]
         retryInterval=1
@@ -101,6 +102,10 @@ class __ServerConnection:
         capabilities=self.receive_bytes(1)
         serveruid=self.receive_bytes(16)
         servername=self.receive_length_prefixed_string(1)
+        self.__idle_timeout_secs=self.recieve_uint(2)
+        self.__log("idle_timeout={}".format(self.__idle_timeout_secs))
+        self.__keepalive_reply=self.recieve_uint(1)
+        self.__log("keepalive_reply={}".format(self.__keepalive_reply))
         #self.__log("server id {}".format(serveruid))
         self.send_bytes(bytes("ok", 'ascii'))
         return True
@@ -111,8 +116,11 @@ class __ServerConnection:
         self.__socket.write(lengthBytes)
         n = self.__socket.write(data)
         self.__log("sent " + str)
+    def send_keepalive_response(self):
+        self.__log("sending keepalive response")
+        self.send_bytes(bytes([0x02])) #keepalive
     def send_string_response(self, request_id, str):
-        print("sending response")
+        self.__log("sending response")
         self.send_bytes(bytes([0x01])) #response
         self.send_bytes(request_id)
         self.send_length_prefixed_string(str, 4)
@@ -131,6 +139,9 @@ class __ServerConnection:
     def receive_bytes(self, num_bytes):
         data = self.__socket.recv(num_bytes)
         return data
+    def recieve_uint(self, n):
+        data = self.__socket.recv(n)
+        return int.from_bytes(data, "little")
     def recv_length_prefixed_data(self, length_size):
         try:
             dataLength = self.__socket.recv(length_size)
@@ -139,7 +150,7 @@ class __ServerConnection:
                 raise exc
             return None
         length = int.from_bytes(dataLength, "little")
-        if length > 64:
+        if length > self.__max_recv_length:
             self.__log("receive length {} exceeds __max_recv_length {}".format(length, self.__max_recv_length))
             self.__shutdown=True
             return None
@@ -232,27 +243,34 @@ class DeviceClient:
             if time.time() > self.__next_think_time:
                 self.__think()
             #if no contact has been made by the server for some time then assume the connection to the server has failed
-            if time.time() > self.__last_server_contact + 1200:
-                self.__log("no ping received - reconnecting to server")
-                raise Exception
+            if self.__server.__idle_timeout_secs > 0:
+                if time.time() > self.__last_server_contact + self.__server.__idle_timeout_secs:
+                    self.__log("idle timeout triggered - reconnecting to server")
+                    raise Exception
             time.sleep(1)
     def __check_for_command(self):
         try:
-            message_type=self.__server.receive_bytes(1)
+            message_type=self.__server.receive_bytes(1)[0]
         except OSError as exc:
             #in case of timeout just return
             if exc.errno == 110: #timeout
                 return
             raise exc
+        self.__last_server_contact = time.time()
         self.__log("message_type {}".format(message_type))
+        if message_type == 2: #keepalive
+            if self.__server.__keepalive_reply:
+                self.__server.send_keepalive_response()
+                return
+            return
         #treat any timeout after this point as an error
         request_id=self.__server.receive_bytes(4)
         self.__log("request_id {}".format(request_id))
         target_name_length=self.__server.receive_bytes(1) #should be zero
+        target = self.__server.receive_bytes(target_name_length[0])
         self.__log("target_name_length {}".format(target_name_length))
         command=self.__server.receive_length_prefixed_string(4)
         self.__log("command {}".format(command))
-        self.__last_server_contact = time.time()
         #implementation of automatically supported commands
         if command == "ping":
             self.__server.send_string_response(request_id, "pong")

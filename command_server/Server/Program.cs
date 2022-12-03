@@ -4,7 +4,7 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Net.Sockets;
 
-namespace Server
+namespace Hub
 {
     class Program
     {
@@ -14,7 +14,7 @@ namespace Server
             int listenPort = args.Length > 0 ? Convert.ToInt32(args[0]) : defaultListenPort;
 
             TlsInfo tlsInfo = null; // new TlsInfo(true, @"E:\git\tls\certificates\servercert.pem", @"E:\git\tls\certificates\serverkey.pem");
-            var server = new Server("server", tlsInfo, new ServerTraceSink());
+            var server = new Hub("server", tlsInfo, new ServerTraceSink());
 
             //if (listenPort == 21008)
             //{
@@ -97,7 +97,7 @@ namespace Server
         //    }
         //}
 
-        static void ListDevices(Server server)
+        static void ListDevices(Hub server)
         {
             var devices = server.GetConnectedDevices();
             Console.WriteLine($"{devices.Count} connected devices");

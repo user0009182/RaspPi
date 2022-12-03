@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Server
+namespace Hub
 {
     /// <summary>
     /// Background thread maintaining outgoing connections
@@ -19,9 +19,9 @@ namespace Server
         CancellationTokenSource threadCancellationSource = new CancellationTokenSource();
         CancellationTokenSource retryCancellationSource = new CancellationTokenSource();
 
-        Server server;
+        Hub server;
         EventTracer trace;
-        public OutgoingConnectionProcessor(Server server, EventTracer tracer)
+        public OutgoingConnectionProcessor(Hub server, EventTracer tracer)
         {
             this.server = server;
             this.trace = tracer;

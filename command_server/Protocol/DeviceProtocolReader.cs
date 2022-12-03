@@ -5,6 +5,9 @@ using System.Net.Sockets;
 
 namespace Protocol
 {
+    /// <summary>
+    /// Provides methods to read device protocol messages over a connection with a remote device or hub
+    /// </summary>
     public class DeviceProtocolReader
     {
         public const int MAX_SIMPLE_REQUEST_DATA_LENGTH = 18192;

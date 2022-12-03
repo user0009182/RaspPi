@@ -1,5 +1,5 @@
 using Protocol;
-using Server;
+using Hub;
 using System;
 using System.Linq;
 using System.Text;
@@ -10,14 +10,14 @@ namespace Tests
 {
     public class ConnectionTests : IDisposable
     {
-        Server.Server server;
+        Hub.Hub server;
 
         //TODO figure out why server ports have to be different in each test
         [Fact]
         public void NonTlsClientConnect()
         {
             var serverLog = new TestTraceSink();
-            server = new Server.Server("server", null, serverLog);
+            server = new Hub.Hub("server", null, serverLog);
             server.Start(10001);
             var clientLog = new TestTraceSink();
             var client = new DeviceClient("device1", clientLog);
@@ -35,7 +35,7 @@ namespace Tests
         public void TlsClientConnect()
         {
             var serverLog = new TestTraceSink();
-            server = new Server.Server("server", new TlsInfo(true, @"E:\git\tls\certificates\servercert.pem", @"E:\git\tls\certificates\serverkey.pem"), serverLog);
+            server = new Hub.Hub("server", new TlsInfo(true, @"E:\git\tls\certificates\servercert.pem", @"E:\git\tls\certificates\serverkey.pem"), serverLog);
             server.Start(10001);
             var clientLog = new TestTraceSink();
             var client = new DeviceClient("device1", clientLog);
@@ -55,7 +55,7 @@ namespace Tests
         public void MultiClientConnect()
         {
             var serverLog = new TestTraceSink();
-            server = new Server.Server("server", null, serverLog);
+            server = new Hub.Hub("server", null, serverLog);
             server.Start(10001);
             var clientLog = new TestTraceSink();
             for (int i=0;i<5;i++)
@@ -70,7 +70,7 @@ namespace Tests
         public void RepeatedConnectDisconnect()
         {
             var serverLog = new TestTraceSink();
-            server = new Server.Server("server", null, serverLog);
+            server = new Hub.Hub("server", null, serverLog);
             server.Start(10001);
             var clientLog = new TestTraceSink();
             var clientId = new Guid("22345678-1234-1234-1234-123456789012");

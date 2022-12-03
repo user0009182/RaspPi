@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Server
+namespace Hub
 {
     class IncomingMessageProcessor
     {
@@ -15,9 +15,9 @@ namespace Server
         EventTracer trace;
         CancellationToken cancellationToken;
         CancellationTokenSource cancellationSource = new CancellationTokenSource();
-        Server server;
+        Hub server;
 
-        public IncomingMessageProcessor(Server server, BlockingCollection<BaseMessage> incomingMessageQueue, EventTracer tracer)
+        public IncomingMessageProcessor(Hub server, BlockingCollection<BaseMessage> incomingMessageQueue, EventTracer tracer)
         {
             this.server = server;
             this.incomingMessageQueue = incomingMessageQueue;

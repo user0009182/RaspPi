@@ -1,5 +1,5 @@
 using Protocol;
-using Server;
+using Hub;
 using System;
 using System.Linq;
 using System.Text;
@@ -10,7 +10,7 @@ namespace Tests
 {
     public class ServerCommandTests : IDisposable
     {
-        Server.Server server;
+        Hub.Hub server;
 
         //TODO figure out why server ports have to be different in each test
         [Fact]
@@ -19,7 +19,7 @@ namespace Tests
             var unknownDeviceId = Guid.Parse("{64648a8a-616a-48f8-92f2-5014df076c56}");
 
             var serverLog = new TestTraceSink();
-            server = new Server.Server("server", null, serverLog);
+            server = new Hub.Hub("server", null, serverLog);
             server.Start(10001);
             var clientLog = new TestTraceSink();
             var client = new DeviceClient("device1", clientLog);
@@ -33,7 +33,7 @@ namespace Tests
         public void ServerPingCommand()
         {
             var serverLog = new TestTraceSink();
-            server = new Server.Server("server", null, serverLog);
+            server = new Hub.Hub("server", null, serverLog);
             server.Start(10001);
             var clientLog = new TestTraceSink();
             var client = new DeviceClient("device1", clientLog);
@@ -47,7 +47,7 @@ namespace Tests
         public void ServerUnknownCommand()
         {
             var serverLog = new TestTraceSink();
-            server = new Server.Server("server", null, serverLog);
+            server = new Hub.Hub("server", null, serverLog);
             server.Start(10001);
             var clientLog = new TestTraceSink();
             var client = new DeviceClient("device1", clientLog);
@@ -65,7 +65,7 @@ namespace Tests
             //the device expects to receive the message and sends a response
             //the terminal expects to receive the response
             var serverLog = new TestTraceSink();
-            server = new Server.Server("server", null, serverLog);
+            server = new Hub.Hub("server", null, serverLog);
             server.Start(10001);
             var clientLog = new TestTraceSink();
             var client1Guid = new Guid("12345678-1234-1234-1234-123456789012");
@@ -93,11 +93,11 @@ namespace Tests
             //connect "terminal" to the relay server and send a request to device1
             //verify request and response are routed correctly
             var relayLog = new TestTraceSink();
-            var relayServer = new Server.Server("relay", null, relayLog);
+            var relayServer = new Hub.Hub("relay", null, relayLog);
             relayServer.Start(10001);
             relayServer.Router.ForwardServerName = "server";
             var serverLog = new TestTraceSink();
-            var server = new Server.Server("server", null, serverLog);
+            var server = new Hub.Hub("server", null, serverLog);
             server.Start(10002);
             server.OutgoingConnectionProcessor.RegisterOutgoingConnection("localhost", 10001, null);
             var device1Log = new TestTraceSink();

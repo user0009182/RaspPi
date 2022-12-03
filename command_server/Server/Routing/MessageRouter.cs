@@ -5,12 +5,12 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Server
+namespace Hub
 {
     public class MessageRouter
     {
-        Server server;
-        public MessageRouter(Server server)
+        Hub server;
+        public MessageRouter(Hub server)
         {
             this.server = server;
         }
