@@ -18,7 +18,7 @@ namespace Protocol
         NetworkStream networkStream;
         DeviceProtocolReader reader;
         DeviceProtocolWriter writer;
-        ILogger logger;
+        EventTracer trace;
         public Guid RemoteDeviceId { get; set; }
 
         public DeviceProtocolReader Reader
@@ -88,10 +88,10 @@ namespace Protocol
             
         }
 
-        public DeviceClient(string localName, ILogger logger)
+        public DeviceClient(string localName, ITraceSink traceSink)
         {
             this.LocalName = localName;
-            this.logger = logger;
+            this.trace = new EventTracer(traceSink);
         }
 
         internal void AssignRemoteName(string name)
@@ -111,12 +111,12 @@ namespace Protocol
             Stream stream = null;
             if (tlsInfo.UseTls)
             {
-                logger.Log($"TLS authenticating as server using certificate {tlsInfo.CertificatePath}, key {tlsInfo.KeyPath}");
+                trace.Flow(TraceEventId.TlsAuthenticatingAsServer, tlsInfo.CertificatePath, tlsInfo.KeyPath);
                 sslStream = new SslStream(networkStream, false);
                 var serverCertificate = X509Certificate2.CreateFromPemFile(tlsInfo.CertificatePath, tlsInfo.KeyPath);
                 var serverCertificate2 = new X509Certificate2(serverCertificate.Export(X509ContentType.Pkcs12));
                 sslStream.AuthenticateAsServer(serverCertificate2, clientCertificateRequired: true, checkCertificateRevocation: false);
-                logger.Log($"TLS authentication OK");
+                trace.Flow(TraceEventId.TlsAuthenticationSuccess);
                 stream = sslStream;
             }
             else
@@ -167,22 +167,22 @@ namespace Protocol
         {
             if (tlsInfo == null)
                 tlsInfo = new TlsInfo(false, "", "");
-            logger.Log($"connecting to {hostname}:{port} tls:{tlsInfo.UseTls}");
+            trace.Flow(TraceEventId.ConnectingAsClient, hostname, Convert.ToString(port), tlsInfo.UseTls.ToString());
             tcpClient = new TcpClient(hostname, port);
-            logger.Log($"connected to {hostname}:{port} tls:{tlsInfo.UseTls}");
+            trace.Flow(TraceEventId.ConnectedAsClient, hostname, Convert.ToString(port), tlsInfo.UseTls.ToString());
             RemoteEndpoint = tcpClient.Client.RemoteEndPoint;
             networkStream = tcpClient.GetStream();
             Stream stream;
             if (tlsInfo.UseTls)
             {
-                logger.Log($"client certificate path='{tlsInfo.CertificatePath}', key path='{tlsInfo.KeyPath}'");
+                trace.Detail(TraceEventId.ClientCertificatePath, tlsInfo.CertificatePath, tlsInfo.KeyPath);
                 var clientCertificate = X509Certificate2.CreateFromPemFile(tlsInfo.CertificatePath, tlsInfo.KeyPath);
                 clientCertificate = new X509Certificate2(clientCertificate.Export(X509ContentType.Pkcs12));
                 var clientCertificateCollection = new X509CertificateCollection(new X509Certificate[] { clientCertificate });
                 sslStream = new SslStream(networkStream, false, new RemoteCertificateValidationCallback(ValidateServerCertificate));
-                logger.Log($"TLS authenticating as client");
+                trace.Detail(TraceEventId.TlsAuthenticatingAsClient);
                 sslStream.AuthenticateAsClient(targetHost: "test.com", clientCertificateCollection, false);
-                logger.Log($"TLS authenticated OK");
+                trace.Detail(TraceEventId.TlsAuthenticationSuccess);
                 stream = sslStream;
             }
             else
@@ -194,15 +194,15 @@ namespace Protocol
             //TODO default values
             reader.SetTimeout(10000);
             writer.SetTimeout(10000);
-            var handshake = new DeviceHandshake(logger);
-            logger.Log($"begin handshake with server");
+            var handshake = new DeviceHandshake(trace);
+            trace.Detail(TraceEventId.HandshakeAsClientBegin);
             bool success = handshake.DoHandshakeAsClient(this, ownDeviceId);
             if (!success)
             {
-                logger.Log($"handshake with server failed");
+                trace.Failure(TraceEventId.HandshakeAsClientFailed);
                 return false;
             }
-            logger.Log($"handshake with server complete");
+            trace.Detail(TraceEventId.HandshakeAsClientSuccess);
             return true;
         }
 
@@ -220,10 +220,10 @@ namespace Protocol
         {
             if (sslPolicyErrors == SslPolicyErrors.None)
             {
-                logger.Log($"server certificate validated OK");
+                trace.Detail(TraceEventId.ServerCertificateValidationSuccess);
                 return true;
             }
-            logger.Log($"failed to validate server certificate: {sslPolicyErrors}");
+            trace.Failure(TraceEventId.ServerCertificateValidationFailed);
             return false;
         }
     }

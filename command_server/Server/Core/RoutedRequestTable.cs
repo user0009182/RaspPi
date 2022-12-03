@@ -16,11 +16,11 @@ namespace Server
         object lock_obj = new object();
 
         Server server;
-        ILogger logger;
-        public RoutedRequestTable(Server server, ILogger logger)
+        EventTracer tracer;
+        public RoutedRequestTable(Server server, EventTracer tracer)
         {
             this.server = server;
-            this.logger = logger;
+            this.tracer = tracer;
         }
 
         /// <summary>
@@ -70,12 +70,12 @@ namespace Server
     {
         private readonly Server server;
         RoutedRequestTable routedRequestTable;
-        ILogger logger;
-        public ResponseTimeoutThread(Server server, RoutedRequestTable routedRequestTable, ILogger logger)
+        EventTracer tracer;
+        public ResponseTimeoutThread(Server server, RoutedRequestTable routedRequestTable, EventTracer tracer)
         {
             this.server = server;
             this.routedRequestTable = routedRequestTable;
-            this.logger = logger;
+            this.tracer = tracer;
         }
         public void Start()
         {

@@ -2,21 +2,15 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Server
+namespace Tests
 {
-    public class DiskLogger : ITraceSink
+    public class TestTraceSink : ITraceSink
     {
-        StreamWriter streamWriter;
-        public DiskLogger(string filepath)
-        {
-            streamWriter = new StreamWriter(File.OpenWrite(filepath));
-        }
-
+        public BlockingCollection<TraceEvent> Events { get; } = new BlockingCollection<TraceEvent>();
         public bool IsEventTypeTraced(TraceEventType type)
         {
             return true;
@@ -24,7 +18,12 @@ namespace Server
 
         public void OnEvent(TraceEvent e)
         {
-            streamWriter.WriteLine(e.Id);
+            Events.Add(e);
+        }
+
+        public bool Contains(TraceEventId eventId)
+        {
+            return Events.Any(e => e.Id == eventId);
         }
     }
 }

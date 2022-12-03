@@ -8,10 +8,10 @@ namespace Protocol
 {
     public class DeviceHandshake
     {
-        ILogger logger;
-        public DeviceHandshake(ILogger logger)
+        EventTracer trace;
+        public DeviceHandshake(EventTracer tracer)
         {
-            this.logger = logger;
+            this.trace = tracer;
         }
 
         public bool DoHandshakeAsServer(DeviceClient client, Guid serverDeviceId)
@@ -50,7 +50,7 @@ namespace Protocol
             {
                 //TODO
                 //IOException with inner exception SocketException, SocketErrorCode::TimedOut indicates timeout
-                logger.Log($"device protocol handshake failure");
+                trace.Failure(TraceEventId.DeviceHandshakeAsServerFailure, e.ToString());
                 return false;
             }
             return true;
@@ -71,7 +71,7 @@ namespace Protocol
                 client.Capabilities = (DeviceCapabilities)client.Reader.ReadBytes(1)[0];
                 client.RemoteDeviceId = new Guid(client.Reader.ReadBytes(16));
                 var serverName = Encoding.ASCII.GetString(client.Reader.ReadData8());
-                logger.Log($"connected to device {serverName} {client.RemoteDeviceId}");
+                trace.Detail(TraceEventId.HandshakeAsClientReceiveRemoteName, serverName);
                 client.AssignRemoteName(serverName);
                 //idle timeout interval in seconds. 0 = off
                 //the hub will send keep alive packets frequently enough
@@ -83,7 +83,7 @@ namespace Protocol
             }
             catch (Exception)
             {
-                logger.Log($"device protocol handshake failure");
+                trace.Failure(TraceEventId.DeviceHandshakeAsClientFailure);
                 return false;
             }
             return true;

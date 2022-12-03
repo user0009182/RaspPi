@@ -72,7 +72,7 @@ namespace Server
                     lastRemoteContact = DateTime.Now;
                     if (message.Type == DeviceProtocolMessageType.KeepAlive)
                     {
-                        server.WriteLog("received keepalive response");
+                        server.Trace.Debug(TraceEventId.ReceivedKeepaliveResponse);
                         //consume keepalives
                         continue;
                     }
@@ -88,7 +88,7 @@ namespace Server
                         {
                             if (DateTime.Now.Subtract(lastRemoteContact).TotalSeconds > client.IdleTimeoutPolicy.Interval)
                             {
-                                server.WriteLog("idle timeout triggered");
+                                server.Trace.Failure(TraceEventId.IdleTimeoutTriggered);
                                 server.OnHandlerFault(this);
                             }
                         }
@@ -103,7 +103,7 @@ namespace Server
                     //    break;
                     //}
 
-                    server.Logger.Log("Error receiving message");
+                    server.Trace.Failure(TraceEventId.ClientMessageReceiveError, e.ToString());
                     server.OnHandlerFault(this);
                     break;
                 }
@@ -168,7 +168,7 @@ namespace Server
             }
             catch (Exception e)
             {
-                server.Logger.Log("Error sending message");
+                server.Trace.Failure(TraceEventId.ClientMessageSendError, e.ToString());
                 server.OnHandlerFault(this);
             }
         }

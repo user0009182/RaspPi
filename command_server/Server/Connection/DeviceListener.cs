@@ -1,7 +1,6 @@
 ﻿using Protocol;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
@@ -32,11 +31,11 @@ namespace Server
         {
             listener = new TcpListener(new IPEndPoint(IPAddress.Any, listenPort));
             listener.Start(10);
-            server.WriteLog($"listening on port {listenPort} tls={tlsInfo.UseTls}");
+            server.Trace.Flow(TraceEventId.ListenerStarted, Convert.ToString(listenPort));
             while (true)
             {
                 var client = listener.AcceptTcpClient();
-                server.WriteLog($"client connected {client.Client.RemoteEndPoint}");
+                server.Trace.Flow(TraceEventId.ClientConnecting, Convert.ToString(client.Client.RemoteEndPoint));
                 HandleClientAsync(client);
             }
         }
@@ -47,26 +46,26 @@ namespace Server
             {
                 try
                 {
-                    DeviceClient client = new DeviceClient(server.Name, server.Logger);
+                    DeviceClient client = new DeviceClient(server.Name, server.Trace.Sink);
                     client.SetIdleTimeoutPolicy(10, true);
                     client.WrapTcpClient(tcpClient, tlsInfo);
-                    server.Logger.Log($"begin handshake with connecting device");
-                    var handshake = new DeviceHandshake(server.Logger);
+                    server.Trace.Detail(TraceEventId.HandshakeAsServerBegin);
+                    var handshake = new DeviceHandshake(server.Trace);
                     var success = handshake.DoHandshakeAsServer(client, server.DeviceId);
                     if (!success)
                     {
-                        server.WriteLog("handshake with connecting device failed");
+                        server.Trace.Failure(TraceEventId.HandshakeAsServerFailed);
                         client.Close();
                         return;
                     }
-                    server.WriteLog("handshake with connecting device complete");
-                    server.WriteLog($"{client.RemoteName} {client.RemoteDeviceId} {client.RemoteEndpoint}");
+                    server.Trace.Detail(TraceEventId.HandshakeAsServerSuccess);
+                    server.Trace.Flow(TraceEventId.ClientConnected, client.RemoteName, client.RemoteDeviceId.ToString(), client.RemoteEndpoint.ToString());
                     var handler = server.CreateDeviceClientHandler(client);
                     return;
                 }
-                catch (Exception)
+                catch (Exception e)
                 {
-                    server.WriteLog("exception accepting connecting device");
+                    server.Trace.Error(TraceEventId.ClientAcceptError, e.ToString());
                 }
             });
         }

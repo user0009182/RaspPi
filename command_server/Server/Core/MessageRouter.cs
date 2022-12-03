@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Protocol;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -34,7 +35,7 @@ namespace Server
             }
             else
             {
-                server.Logger.Log($"target {deviceName} not found");
+                server.Trace.Failure(TraceEventId.ResolveFailure, deviceName);
                 return Guid.Empty;
             }
         }

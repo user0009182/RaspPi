@@ -18,10 +18,10 @@ namespace Tests
         {
             var unknownDeviceId = Guid.Parse("{64648a8a-616a-48f8-92f2-5014df076c56}");
 
-            var serverLog = new Logger();
+            var serverLog = new TestTraceSink();
             server = new Server.Server("server", null, serverLog);
             server.Start(10001);
-            var clientLog = new Logger();
+            var clientLog = new TestTraceSink();
             var client = new DeviceClient("device1", clientLog);
             client.Connect("localhost", 10001, new TlsInfo(false, "", ""), Guid.NewGuid());
             client.Writer.SendMessage(new RequestMessage(1, null, unknownDeviceId, Encoding.ASCII.GetBytes("hello")));
@@ -32,10 +32,10 @@ namespace Tests
         [Fact]
         public void ServerPingCommand()
         {
-            var serverLog = new Logger();
+            var serverLog = new TestTraceSink();
             server = new Server.Server("server", null, serverLog);
             server.Start(10001);
-            var clientLog = new Logger();
+            var clientLog = new TestTraceSink();
             var client = new DeviceClient("device1", clientLog);
             client.Connect("localhost", 10001, null, Guid.NewGuid());
             client.Writer.SendMessage(new RequestMessage(1, null, server.DeviceId, Encoding.ASCII.GetBytes("ping")));
@@ -46,10 +46,10 @@ namespace Tests
         [Fact]
         public void ServerUnknownCommand()
         {
-            var serverLog = new Logger();
+            var serverLog = new TestTraceSink();
             server = new Server.Server("server", null, serverLog);
             server.Start(10001);
-            var clientLog = new Logger();
+            var clientLog = new TestTraceSink();
             var client = new DeviceClient("device1", clientLog);
             client.Connect("localhost", 10001, new TlsInfo(false, "", ""), Guid.NewGuid());
             client.Writer.SendMessage(new RequestMessage(1, null, server.DeviceId, Encoding.ASCII.GetBytes("abbcdefg")));
@@ -64,10 +64,10 @@ namespace Tests
             //send a message from the terminal targetted to the device
             //the device expects to receive the message and sends a response
             //the terminal expects to receive the response
-            var serverLog = new Logger();
+            var serverLog = new TestTraceSink();
             server = new Server.Server("server", null, serverLog);
             server.Start(10001);
-            var clientLog = new Logger();
+            var clientLog = new TestTraceSink();
             var client1Guid = new Guid("12345678-1234-1234-1234-123456789012");
             var device = new DeviceClient("device1", clientLog);
             device.Connect("localhost", 10001, null, client1Guid);
@@ -92,19 +92,19 @@ namespace Tests
             //configure the relay server to forward all requests to "server"
             //connect "terminal" to the relay server and send a request to device1
             //verify request and response are routed correctly
-            var relayLog = new Logger();
+            var relayLog = new TestTraceSink();
             var relayServer = new Server.Server("relay", null, relayLog);
             relayServer.Start(10001);
             relayServer.Router.ForwardServerName = "server";
-            var serverLog = new Logger();
+            var serverLog = new TestTraceSink();
             var server = new Server.Server("server", null, serverLog);
             server.Start(10002);
             server.OutgoingConnectionProcessor.RegisterOutgoingConnection("localhost", 10001, null);
-            var device1Log = new Logger();
+            var device1Log = new TestTraceSink();
             var device1Guid = new Guid("12345678-1234-1234-1234-123456789012");
             var device1 = new DeviceClient("device1", device1Log);
             device1.Connect("localhost", 10002, null, device1Guid);
-            var terminalLog = new Logger();
+            var terminalLog = new TestTraceSink();
             var terminalGuid = new Guid("12345678-1234-1234-1234-123456789013");
             var terminal = new DeviceClient("terminal", terminalLog);
             terminal.Connect("localhost", 10001, null, terminalGuid);

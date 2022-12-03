@@ -10,12 +10,12 @@ namespace Server
     class ServerCommandHandler
     {
         Server server;
-        private readonly ILogger logger;
+        EventTracer trace;
 
-        public ServerCommandHandler(Server server, ILogger logger)
+        public ServerCommandHandler(Server server, EventTracer tracer)
         {
             this.server = server;
-            this.logger = logger;
+            this.trace = tracer;
         }
 
         public void Start()
@@ -69,7 +69,7 @@ namespace Server
             if (responseClient == null)
             {
                 //TODO
-                logger.Log($"could not send response to {request.SourceDeviceId}");
+                trace.Failure(TraceEventId.SendResponseFailed, request.SourceDeviceId.ToString());
                 return;
             }
             var response = new ResponseMessage(request.RequestId, Encoding.ASCII.GetBytes(responseText));

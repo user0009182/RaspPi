@@ -60,6 +60,7 @@ class __ServerConnection:
         self.__logger = logger
         self.__wifi = wifi
         self.__socket = None
+        self.__max_recv_length = 64
     def retry_until_connected(self, ip, port, device_name):
         addr = socket.getaddrinfo(ip, port)[0][-1]
         retryInterval=1
@@ -149,7 +150,7 @@ class __ServerConnection:
                 raise exc
             return None
         length = int.from_bytes(dataLength, "little")
-        if length > 64:
+        if length > self.__max_recv_length:
             self.__log("receive length {} exceeds __max_recv_length {}".format(length, self.__max_recv_length))
             self.__shutdown=True
             return None
@@ -266,6 +267,7 @@ class DeviceClient:
         request_id=self.__server.receive_bytes(4)
         self.__log("request_id {}".format(request_id))
         target_name_length=self.__server.receive_bytes(1) #should be zero
+        target = self.__server.receive_bytes(target_name_length[0])
         self.__log("target_name_length {}".format(target_name_length))
         command=self.__server.receive_length_prefixed_string(4)
         self.__log("command {}".format(command))

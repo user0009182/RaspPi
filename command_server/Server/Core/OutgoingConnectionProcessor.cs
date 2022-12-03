@@ -20,11 +20,11 @@ namespace Server
         CancellationTokenSource retryCancellationSource = new CancellationTokenSource();
 
         Server server;
-        ILogger logger;
-        public OutgoingConnectionProcessor(Server server, ILogger logger)
+        EventTracer trace;
+        public OutgoingConnectionProcessor(Server server, EventTracer tracer)
         {
             this.server = server;
-            this.logger = logger;
+            this.trace = tracer;
         }
 
         public void RegisterOutgoingConnection(string host, int port, TlsInfo tlsInfo)
@@ -84,7 +84,7 @@ namespace Server
         {
             try
             {
-                var client = new DeviceClient(server.Name, logger);
+                var client = new DeviceClient(server.Name, server.Trace.Sink);
                 var success = client.Connect(connection.Host, connection.Port, connection.TlsInfo, server.DeviceId);
                 if (!success)
                 {

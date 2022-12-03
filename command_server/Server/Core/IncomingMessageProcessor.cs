@@ -12,16 +12,16 @@ namespace Server
     class IncomingMessageProcessor
     {
         BlockingCollection<BaseMessage> incomingMessageQueue;
-        private ILogger logger;
+        EventTracer trace;
         CancellationToken cancellationToken;
         CancellationTokenSource cancellationSource = new CancellationTokenSource();
         Server server;
 
-        public IncomingMessageProcessor(Server server, BlockingCollection<BaseMessage> incomingMessageQueue, ILogger logger)
+        public IncomingMessageProcessor(Server server, BlockingCollection<BaseMessage> incomingMessageQueue, EventTracer tracer)
         {
             this.server = server;
             this.incomingMessageQueue = incomingMessageQueue;
-            this.logger = logger;
+            this.trace = tracer;
             cancellationToken = cancellationSource.Token;
         }
 
@@ -93,7 +93,7 @@ namespace Server
                 if (sourceHandler == null)
                 {
                     //TODO
-                    logger.Log($"could not send response to {request.SourceDeviceId}");
+                    trace.Failure(TraceEventId.SendResponseFailed, request.SourceDeviceId.ToString());
                     return;
                 }
                 sourceHandler.SendQueue.Add(newResponse);
@@ -112,7 +112,8 @@ namespace Server
             var routedRequest = server.RoutedRequestTable.TakeRoutedRequest(response.RequestId, response.SourceDeviceId);
             if (routedRequest == null)
             {
-                logger.Log($"No routed request entry matching received response message reqid:{response.RequestId} src device:{response.SourceDeviceId}");
+                //  $"No routed request entry matching received response message reqid:{response.RequestId} src device:{response.SourceDeviceId}"
+                trace.Error(TraceEventId.MissingRouteRequestEntry, Convert.ToString(response.RequestId), response.SourceDeviceId.ToString());
                 return;
             }
             //prepare to forward response onto the original source of the request
@@ -121,7 +122,8 @@ namespace Server
             {
                 //source device is not connected
                 //TODO
-                logger.Log($"Could not forward response from {response.SourceDeviceId} to {routedRequest.SrcDeviceId}");
+                //$"Could not forward response from {response.SourceDeviceId} to {routedRequest.SrcDeviceId}"
+                trace.Failure(TraceEventId.ResponseForwardingFailed, response.SourceDeviceId.ToString(), routedRequest.SrcDeviceId.ToString());
                 return;
             }
             var newResponse = new ResponseMessage(routedRequest.SrcRequestId, response.RequestData);

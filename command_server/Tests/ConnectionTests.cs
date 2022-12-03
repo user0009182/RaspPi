@@ -16,50 +16,48 @@ namespace Tests
         [Fact]
         public void NonTlsClientConnect()
         {
-            var serverLog = new Logger();
+            var serverLog = new TestTraceSink();
             server = new Server.Server("server", null, serverLog);
             server.Start(10001);
-            var clientLog = new Logger();
+            var clientLog = new TestTraceSink();
             var client = new DeviceClient("device1", clientLog);
             client.Connect("localhost", 10001, new TlsInfo(false, "", ""), Guid.NewGuid());
-            Assert.Contains(serverLog.Data, l => l.Contains("server starting"));
-            Assert.Contains(serverLog.Data, l => l.Contains("listening on port"));
-            Assert.Contains(serverLog.Data, l => l.Contains("client connected"));
-            Assert.Contains(serverLog.Data, l => l.Contains("handshake with connecting device complete"));
-            Assert.Contains(clientLog.Data, l => l.Contains("connected to"));
-            Assert.Contains(clientLog.Data, l => l.Contains("handshake with server complete"));
+
+            Assert.True(serverLog.Contains(TraceEventId.ServerStarting));
+            Assert.True(serverLog.Contains(TraceEventId.ListenerStarted));
+            Assert.True(serverLog.Contains(TraceEventId.ClientConnected));
+            Assert.True(serverLog.Contains(TraceEventId.HandshakeAsServerSuccess));
+            Assert.True(clientLog.Contains(TraceEventId.HandshakeAsClientSuccess));
             Assert.Single(server.GetConnectedDevices());
         }
 
         [Fact]
         public void TlsClientConnect()
         {
-            var serverLog = new Logger();
+            var serverLog = new TestTraceSink();
             server = new Server.Server("server", new TlsInfo(true, @"E:\git\tls\certificates\servercert.pem", @"E:\git\tls\certificates\serverkey.pem"), serverLog);
             server.Start(10001);
-            var clientLog = new Logger();
+            var clientLog = new TestTraceSink();
             var client = new DeviceClient("device1", clientLog);
             client.Connect("localhost", 10001, new TlsInfo(true, @"E:\git\tls\certificates\clientcert.pem", @"E:\git\tls\certificates\clientkey.pem"), Guid.NewGuid());
 
-            Assert.Contains(serverLog.Data, l => l.Contains("server starting"));
-            Assert.Contains(serverLog.Data, l => l.Contains("listening on port"));
-            Assert.Contains(serverLog.Data, l => l.Contains("client connected"));
-            Assert.Contains(serverLog.Data, l => l.Contains("TLS authentication OK"));
-            Assert.Contains(serverLog.Data, l => l.Contains("handshake with connecting device complete"));
-            Assert.Contains(clientLog.Data, l => l.Contains("connected to"));
-            Assert.Contains(clientLog.Data, l => l.Contains("TLS authenticating as client"));
-            Assert.Contains(clientLog.Data, l => l.Contains("TLS authenticated OK"));
-            Assert.Contains(clientLog.Data, l => l.Contains("handshake with server complete"));
+            Assert.True(serverLog.Contains(TraceEventId.ServerStarting));
+            Assert.True(serverLog.Contains(TraceEventId.ListenerStarted));
+            Assert.True(serverLog.Contains(TraceEventId.ClientConnected));
+            Assert.True(serverLog.Contains(TraceEventId.TlsAuthenticatingAsServer));
+            Assert.True(serverLog.Contains(TraceEventId.TlsAuthenticationSuccess));
+            Assert.True(clientLog.Contains(TraceEventId.TlsAuthenticatingAsClient));
+            Assert.True(clientLog.Contains(TraceEventId.TlsAuthenticationSuccess));
             Assert.Single(server.GetConnectedDevices());
         }
 
         [Fact]
         public void MultiClientConnect()
         {
-            var serverLog = new Logger();
+            var serverLog = new TestTraceSink();
             server = new Server.Server("server", null, serverLog);
             server.Start(10001);
-            var clientLog = new Logger();
+            var clientLog = new TestTraceSink();
             for (int i=0;i<5;i++)
             {
                 var client = new DeviceClient("device1", clientLog);
@@ -71,10 +69,10 @@ namespace Tests
         [Fact]
         public void RepeatedConnectDisconnect()
         {
-            var serverLog = new Logger();
+            var serverLog = new TestTraceSink();
             server = new Server.Server("server", null, serverLog);
             server.Start(10001);
-            var clientLog = new Logger();
+            var clientLog = new TestTraceSink();
             var clientId = new Guid("22345678-1234-1234-1234-123456789012");
             var client = new DeviceClient("device1", clientLog);
             client.Connect("localhost", 10001, null, clientId);

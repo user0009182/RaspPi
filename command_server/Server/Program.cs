@@ -13,13 +13,13 @@ namespace Server
             int defaultListenPort = 21008;
             int listenPort = args.Length > 0 ? Convert.ToInt32(args[0]) : defaultListenPort;
 
-            var tlsInfo = new TlsInfo(true, @"E:\git\tls\certificates\servercert.pem", @"E:\git\tls\certificates\serverkey.pem");
-            var server = new Server("server", tlsInfo, new Logger());
+            TlsInfo tlsInfo = null; // new TlsInfo(true, @"E:\git\tls\certificates\servercert.pem", @"E:\git\tls\certificates\serverkey.pem");
+            var server = new Server("server", tlsInfo, new ServerTraceSink());
 
-            if (listenPort == 21008)
-            {
-                server.OutgoingConnectionProcessor.RegisterOutgoingConnection("localhost", 21007, new TlsInfo(true, @"E:\git\tls\certificates\clientcert.pem", @"E:\git\tls\certificates\clientkey.pem"));
-            }
+            //if (listenPort == 21008)
+            //{
+            //    server.OutgoingConnectionProcessor.RegisterOutgoingConnection("localhost", 21007, new TlsInfo(true, @"E:\git\tls\certificates\clientcert.pem", @"E:\git\tls\certificates\clientkey.pem"));
+            //}
 
             server.Start(listenPort);
             
@@ -107,6 +107,19 @@ namespace Server
             {
                 Console.WriteLine($"{device.DeviceId}) {device.IpAddress}");
             }
+        }
+    }
+
+    class ServerTraceSink : ITraceSink
+    {
+        public bool IsEventTypeTraced(Protocol.TraceEventType type)
+        {
+            return true;
+        }
+
+        public void OnEvent(TraceEvent e)
+        {
+            Console.WriteLine(e.Id);
         }
     }
 }

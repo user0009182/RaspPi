@@ -41,7 +41,7 @@ namespace Terminal
         static BlockingCollection<string> responses = new BlockingCollection<string>();
         static void NetThreadProc(string host, int port)
         {
-            var device = new DeviceClient("Terminal", new Logger());
+            var device = new DeviceClient("Terminal", null);
             device.Connect(host, port, null, Guid.Empty);
             while(true)
             {
@@ -62,13 +62,20 @@ namespace Terminal
                 {
                     var targetDeviceName = parts[1];
                     DoSend(device, targetDeviceName, parts.Skip(2));
-                    continue;
                 }
-                device.Writer.SendMessage(new RequestMessage(1, null, device.RemoteDeviceId, Encoding.ASCII.GetBytes(command)));
+                else
+                {
+                    device.Writer.SendMessage(new RequestMessage(1, null, device.RemoteDeviceId, Encoding.ASCII.GetBytes(command)));
+                }
+                
                 var response = ReadResponse(device);
                 if (response == null)
                     continue;
                 var responseString = Encoding.ASCII.GetString(response.RequestData);
+                if (command.Contains("get_image"))
+                {
+                    System.IO.File.WriteAllBytes(@"imageA.jpg", Convert.FromBase64String(responseString));
+                }
                 responses.Add(responseString);
             }
         }
@@ -95,9 +102,6 @@ namespace Terminal
                 var command = string.Join(' ', commandParts);
                 requestId++;
                 device.Writer.SendMessage(new RequestMessage(requestId, targetName, Guid.Empty, Encoding.ASCII.GetBytes(command)));
-                var response = ReadResponse(device);
-                var responseString = Encoding.ASCII.GetString(response.RequestData);
-                Console.WriteLine(responseString);
             }
             catch (Exception e)
             {
@@ -120,13 +124,6 @@ namespace Terminal
             if (socketException == null)
                 return false;
             return socketException.SocketErrorCode == SocketError.TimedOut;
-        }
-    }
-
-    public class Logger : ILogger
-    {
-        public void Log(string text)
-        {
         }
     }
 }

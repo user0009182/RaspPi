@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
@@ -22,35 +21,28 @@ namespace Server
         public RoutedRequestTable RoutedRequestTable { get; }
         public OutgoingConnectionProcessor OutgoingConnectionProcessor { get; }
 
-        ILogger logger;
         TlsInfo tlsInfo;
-        public ILogger Logger
-        {
-            get
-            {
-                return logger;
-            }
-        }
+        public EventTracer Trace { get; private set; }
 
         public MessageRouter Router { get; }
         public Guid DeviceId { get; }
         public BlockingCollection<RequestMessage> CommandQueue { get; internal set; } = new BlockingCollection<RequestMessage>();
         public string Name { get; }
 
-        public Server(string name, TlsInfo tlsInfo, ILogger logger)
+        public Server(string name, TlsInfo tlsInfo, ITraceSink traceSink)
         {
             Name = name;
             if (tlsInfo == null)
                 tlsInfo = new TlsInfo(false, "", "");
             this.tlsInfo = tlsInfo;
-            this.logger = logger;
+            Trace = new EventTracer(traceSink);
             DeviceId = Guid.NewGuid();
             Router = new MessageRouter(this);
-            RoutedRequestTable = new RoutedRequestTable(this, logger);
-            incomingMessageProcessor = new IncomingMessageProcessor(this, receivedMessageQueue, logger);
-            responseTimeoutThread = new ResponseTimeoutThread(this, RoutedRequestTable, logger);
-            commandHandler = new ServerCommandHandler(this, logger);
-            OutgoingConnectionProcessor = new OutgoingConnectionProcessor(this, logger);
+            RoutedRequestTable = new RoutedRequestTable(this, Trace);
+            incomingMessageProcessor = new IncomingMessageProcessor(this, receivedMessageQueue, Trace);
+            responseTimeoutThread = new ResponseTimeoutThread(this, RoutedRequestTable, Trace);
+            commandHandler = new ServerCommandHandler(this, Trace);
+            OutgoingConnectionProcessor = new OutgoingConnectionProcessor(this, Trace);
             incomingMessageProcessor.Start();
             responseTimeoutThread.Start();
             commandHandler.Start();
@@ -118,7 +110,7 @@ namespace Server
 
         internal void OnHandlerFault(DeviceClientHandler handler)
         {
-            WriteLog($"closing session {handler.SessionId} - fault detected");
+            Trace.Failure(TraceEventId.HandlerFault, handler.Client.RemoteName);
             handler.Shutdown();
             OutgoingConnectionProcessor.OnDisconnect(handler);
             RemoveConnectedClient(handler);
@@ -126,7 +118,7 @@ namespace Server
 
         public void Start(int listenPort)
         {
-            WriteLog("server starting");
+            Trace.Flow(TraceEventId.ServerStarting);
             listener = new DeviceListener(listenPort, this, tlsInfo);
             listener.Start();
         }
@@ -137,12 +129,7 @@ namespace Server
             {
                 connectedDevices.Remove(clientHandler.Client.RemoteDeviceId);
             }
-            WriteLog($"device {clientHandler.SessionId} deregistered");
-        }
-
-        public void WriteLog(string text)
-        {
-            logger.Log(text);
+            Trace.Flow(TraceEventId.DeviceDeregistered, clientHandler.Client.RemoteName);
         }
     }
 
