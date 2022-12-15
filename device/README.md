@@ -1,0 +1,3 @@
+device_client.py is a MicroPython device protocol client implementation designed to run on a Raspberry Pi Pico W. See the test folder for an example of it being used. The other folders contain examples for controlling specific components attached to the device.
+
+The first thing the client does is connect to the WIFI. To do this it needs the network name and credentials, which must be stored on the device. write_wifi.py must be run on the Pico first to write this information.
