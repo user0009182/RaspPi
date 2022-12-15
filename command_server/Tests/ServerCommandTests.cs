@@ -11,8 +11,6 @@ namespace Tests
     public class ServerCommandTests : IDisposable
     {
         Hub.Hub server;
-
-        //TODO figure out why server ports have to be different in each test
         [Fact]
         public void RequestedDeviceNotFound()
         {
