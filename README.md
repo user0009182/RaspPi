@@ -1,9 +1,10 @@
-# Remote Device Network
+# Device Network
+Components to build a network of devices that can be controlled remotely.
 
+Connected devices can be sent commands and queries:
 ![Architecture](/diag1.png)
 
-This repository contains components to build a network of devices that can be controlled remotely
-
+This respository contains
 - A central Hub that acts as a server through which devices can be monitored and controlled
 - Definition of a protocol for communication between devices and a hub
 - A MicroPython client that implements the protocol and can be deployed onto a Raspberry Pi Pico W
