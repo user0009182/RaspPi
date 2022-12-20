@@ -40,7 +40,7 @@ namespace Protocol
                 client.Writer.WriteData8(Encoding.ASCII.GetBytes(client.LocalName));
                 //idle timeout interval in seconds. 0 = off
                 //the hub will send keep alive packets frequently enough
-                client.Writer.WriteUInt16(10);
+                client.Writer.WriteUInt16((ushort)client.IdleTimeoutPolicy.Interval);
                 //whether the device should reply to keepalives
                 client.Writer.WriteByte(1);
                 data = client.Reader.ReadBytes(2);
