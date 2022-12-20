@@ -83,27 +83,27 @@ namespace Hub
                 targetId = server.Router.ResolveDeviceId(request.TargetDeviceName);
             }
             
-            var handler = server.GetConnectedDevice(targetId);
-            if (handler == null)
+            var device = server.GetConnectedDevice(targetId);
+            if (device == null)
             {
                 //device is not connected
                 //send back response to that effect
                 var newResponse = new ResponseMessage(request.RequestId, Encoding.ASCII.GetBytes("notfound"));
-                var sourceHandler = server.GetConnectedDevice(request.SourceDeviceId);
-                if (sourceHandler == null)
+                device = server.GetConnectedDevice(request.SourceDeviceId);
+                if (device == null)
                 {
                     //TODO
                     trace.Failure(TraceEventId.SendResponseFailed, request.SourceDeviceId.ToString());
                     return;
                 }
-                sourceHandler.SendQueue.Add(newResponse);
+                device.Send(newResponse);
                 return;
             }
 
             uint requestId = server.GenerateRequestId();
             server.RoutedRequestTable.AddEntry(requestId, targetId, request.SourceDeviceId, request.RequestId);
             var newRequest = new RequestMessage(requestId, request.TargetDeviceName, targetId, request.RequestData);
-            handler.SendQueue.Add(newRequest);
+            device.Send(newRequest);
         }
 
         void ProcessResponse(ResponseMessage response)
@@ -117,8 +117,8 @@ namespace Hub
                 return;
             }
             //prepare to forward response onto the original source of the request
-            var handler = server.GetConnectedDevice(routedRequest.SrcDeviceId);
-            if (handler == null)
+            var device = server.GetConnectedDevice(routedRequest.SrcDeviceId);
+            if (device == null)
             {
                 //source device is not connected
                 //TODO
@@ -127,7 +127,7 @@ namespace Hub
                 return;
             }
             var newResponse = new ResponseMessage(routedRequest.SrcRequestId, response.RequestData);
-            handler.SendQueue.Add(newResponse);
+            device.Send(newResponse);
         }
     }
 }

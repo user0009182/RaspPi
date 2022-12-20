@@ -57,15 +57,15 @@ namespace Hub
         void PostTimeoutResponse(Guid targetDeviceId, uint requestId)
         {
             //prepare to forward response onto the original source of the request
-            var handler = server.GetConnectedDevice(targetDeviceId);
-            if (handler == null)
+            var device = server.GetConnectedDevice(targetDeviceId);
+            if (device == null)
             {
                 //TODO
                 //logger.Log($"Could not forward response from {response.SourceDeviceId} to {routedRequest.SrcDeviceId}");
                 return;
             }
             var newResponse = new ResponseMessage(requestId, Encoding.ASCII.GetBytes("timeout"));
-            handler.SendQueue.Add(newResponse);
+            device.Send(newResponse);
         }
     }
 }

@@ -19,7 +19,7 @@ namespace Hub
         DeviceListener listener;
         int nextSessionId = 0;
         BlockingCollection<BaseMessage> receivedMessageQueue = new BlockingCollection<BaseMessage>();
-        Dictionary<Guid, DeviceClientHandler> connectedDevices = new Dictionary<Guid, DeviceClientHandler>();
+        Dictionary<Guid, DeviceClient> connectedDevices = new Dictionary<Guid, DeviceClient>();
         IncomingMessageProcessor incomingMessageProcessor;
         ResponseTimeoutThread responseTimeoutThread;
         ServerCommandHandler commandHandler;
@@ -59,16 +59,18 @@ namespace Hub
             listener.Stop();
         }
 
-        public DeviceClientHandler CreateDeviceClientHandler(DeviceClient client)
+        public void StartDeviceClientHandler(DeviceClient client)
         {
             lock (connectedDevices)
             {
-                var handler = new DeviceClientHandler(client, nextSessionId, this, receivedMessageQueue);
-                handler.Start();
-                connectedDevices.Add(client.RemoteDeviceId, handler);
-                nextSessionId++;
-                return handler;
+                client.StartHandler(OnClientReceiveMessage, OnHandlerFault);
+                connectedDevices.Add(client.RemoteDeviceId, client);
             }
+        }
+
+        void OnClientReceiveMessage(BaseMessage message)
+        {
+            receivedMessageQueue.Add(message);
         }
 
         public List<ConnectedDeviceInfo> GetConnectedDevices()
@@ -78,13 +80,13 @@ namespace Hub
             {
                 foreach (var entry in connectedDevices)
                 {
-                    ret.Add(new ConnectedDeviceInfo(entry.Value.Client.RemoteName, entry.Key, entry.Value.RemoteEndpoint.ToString()));
+                    ret.Add(new ConnectedDeviceInfo(entry.Value.RemoteName, entry.Key, entry.Value.RemoteEndpoint.ToString()));
                 }
             }
             return ret;
         }
 
-        internal DeviceClientHandler GetDeviceByIp(string ip)
+        internal DeviceClient GetDeviceByIp(string ip)
         {
             lock(connectedDevices)
             {
@@ -92,9 +94,9 @@ namespace Hub
             }
         }
 
-        internal DeviceClientHandler GetConnectedDevice(Guid deviceId)
+        internal DeviceClient GetConnectedDevice(Guid deviceId)
         {
-            DeviceClientHandler ret = null;
+            DeviceClient ret = null;
             lock (connectedDevices)
             {
                 connectedDevices.TryGetValue(deviceId, out ret);
@@ -113,12 +115,12 @@ namespace Hub
             }
         }
 
-        internal void OnHandlerFault(DeviceClientHandler handler)
+        internal void OnHandlerFault(DeviceClient client)
         {
-            Trace.Failure(TraceEventId.HandlerFault, handler.Client.RemoteName);
-            handler.Shutdown();
-            OutgoingConnectionProcessor.OnDisconnect(handler);
-            RemoveConnectedClient(handler);
+            Trace.Failure(TraceEventId.HandlerFault, client.RemoteName);
+            client.Close();
+            OutgoingConnectionProcessor.OnDisconnect(client);
+            RemoveConnectedClient(client);
         }
 
         public void Start(int listenPort)
@@ -128,13 +130,13 @@ namespace Hub
             listener.Start();
         }
 
-        internal void RemoveConnectedClient(DeviceClientHandler clientHandler)
+        internal void RemoveConnectedClient(DeviceClient client)
         {
             lock (connectedDevices)
             {
-                connectedDevices.Remove(clientHandler.Client.RemoteDeviceId);
+                connectedDevices.Remove(client.RemoteDeviceId);
             }
-            Trace.Flow(TraceEventId.DeviceDeregistered, clientHandler.Client.RemoteName);
+            Trace.Flow(TraceEventId.DeviceDeregistered, client.RemoteName);
         }
     }
 

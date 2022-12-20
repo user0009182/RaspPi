@@ -91,8 +91,8 @@ namespace Hub
                     connection.NextRetry = DateTime.Now.AddSeconds(30);
                     return;
                 }
-                var handler = server.CreateDeviceClientHandler(client);
-                connection.SetHandler(handler);
+                server.StartDeviceClientHandler(client);
+                connection.SetClient(client);
             }
             catch (Exception exception)
             {
@@ -109,14 +109,14 @@ namespace Hub
             }
         }
 
-        internal void OnDisconnect(DeviceClientHandler handler)
+        internal void OnDisconnect(DeviceClient client)
         {
             lock (outgoingConnections)
             {
-                var connection = outgoingConnections.FirstOrDefault(c => c.Handler == handler);
+                var connection = outgoingConnections.FirstOrDefault(c => c.Client == client);
                 if (connection != null)
                 {
-                    connection.SetHandler(null);
+                    connection.SetClient(null);
                     retryCancellationSource.Cancel();
                 }
             }
@@ -143,19 +143,19 @@ namespace Hub
         {
             get
             {
-                return Handler != null;
+                return Client != null;
             }
         }
         public DateTime NextRetry { get; set; }
-        public DeviceClientHandler Handler { get; private set; }
+        public DeviceClient Client { get; private set; }
         public int SecondsUntilRetry()
         {
             return (int)NextRetry.Subtract(DateTime.Now).TotalSeconds;
         }
 
-        internal void SetHandler(DeviceClientHandler handler)
+        internal void SetClient(DeviceClient client)
         {
-            this.Handler = handler;
+            this.Client = client;
         }
     }
 }

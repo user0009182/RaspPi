@@ -10,7 +10,7 @@ namespace HttpServer.Data
         {
             if (deviceClient == null)
             {
-                deviceClient = new DeviceClient(new NullLogger());
+                deviceClient = new DeviceClient("web", null);
                 deviceClient.Connect("localhost", 21008, null, Guid.NewGuid());
             }
             var responseText = deviceClient.SendStringRequest(target, command);

@@ -22,13 +22,13 @@ namespace Tests
             var clientLog = new TestTraceSink();
             var client = new DeviceClient("device1", clientLog);
             client.Connect("localhost", 10001, new TlsInfo(false, "", ""), Guid.NewGuid());
-
             Assert.True(serverLog.Contains(TraceEventId.ServerStarting));
             Assert.True(serverLog.Contains(TraceEventId.ListenerStarted));
-            Assert.True(serverLog.Contains(TraceEventId.ClientConnected));
+            AssertTrueWait(() => serverLog.Contains(TraceEventId.ClientConnected));
             Assert.True(serverLog.Contains(TraceEventId.HandshakeAsServerSuccess));
             Assert.True(clientLog.Contains(TraceEventId.HandshakeAsClientSuccess));
             Assert.Single(server.GetConnectedDevices());
+            client.Close();
         }
 
         [Fact]
@@ -40,15 +40,28 @@ namespace Tests
             var clientLog = new TestTraceSink();
             var client = new DeviceClient("device1", clientLog);
             client.Connect("localhost", 10001, new TlsInfo(true, @"E:\git\tls\certificates\clientcert.pem", @"E:\git\tls\certificates\clientkey.pem"), Guid.NewGuid());
-
-            Assert.True(serverLog.Contains(TraceEventId.ServerStarting));
-            Assert.True(serverLog.Contains(TraceEventId.ListenerStarted));
-            Assert.True(serverLog.Contains(TraceEventId.ClientConnected));
-            Assert.True(serverLog.Contains(TraceEventId.TlsAuthenticatingAsServer));
+            AssertTrueWait(() => serverLog.Contains(TraceEventId.ServerStarting));
+            AssertTrueWait(() => serverLog.Contains(TraceEventId.ListenerStarted));
+            AssertTrueWait(() => serverLog.Contains(TraceEventId.ClientConnected));
+            AssertTrueWait(() => serverLog.Contains(TraceEventId.TlsAuthenticatingAsServer));
             Assert.True(serverLog.Contains(TraceEventId.TlsAuthenticationSuccess));
             Assert.True(clientLog.Contains(TraceEventId.TlsAuthenticatingAsClient));
             Assert.True(clientLog.Contains(TraceEventId.TlsAuthenticationSuccess));
             Assert.Single(server.GetConnectedDevices());
+            client.Close();
+        }
+
+        void AssertTrueWait(Func<bool> condition, int timeoutMs=1000)
+        {
+            bool result=false;
+            var end = DateTime.Now.AddMilliseconds(timeoutMs);
+            while (DateTime.Now < end)
+            {
+                result = condition();
+                if (result)
+                    break;
+            }
+            Assert.True(result);
         }
 
         [Fact]
@@ -63,7 +76,7 @@ namespace Tests
                 var client = new DeviceClient("device1", clientLog);
                 client.Connect("localhost", 10001, new TlsInfo(false, "", ""), Guid.NewGuid());
             }
-            Assert.Equal(5, server.GetConnectedDevices().Count);
+            AssertTrueWait(() => server.GetConnectedDevices().Count == 5);
         }
 
         [Fact]
@@ -82,7 +95,7 @@ namespace Tests
             client.Close();
             client.Connect("localhost", 10001, null, clientId);
             //TODO test messages
-            Assert.Equal(1, server.GetConnectedDevices().Count);
+            AssertTrueWait(() => server.GetConnectedDevices().Count == 1);
         }
 
         public void Dispose()

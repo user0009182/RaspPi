@@ -29,14 +29,21 @@ namespace Hub
         TcpListener listener;
         void ThreadProc()
         {
-            listener = new TcpListener(new IPEndPoint(IPAddress.Any, listenPort));
-            listener.Start(10);
-            server.Trace.Flow(TraceEventId.ListenerStarted, Convert.ToString(listenPort));
-            while (true)
+            try
             {
-                var client = listener.AcceptTcpClient();
-                server.Trace.Flow(TraceEventId.ClientConnecting, Convert.ToString(client.Client.RemoteEndPoint));
-                HandleClientAsync(client);
+                listener = new TcpListener(new IPEndPoint(IPAddress.Any, listenPort));
+                listener.Start(10);
+                server.Trace.Flow(TraceEventId.ListenerStarted, Convert.ToString(listenPort));
+                while (true)
+                {
+                    var client = listener.AcceptTcpClient();
+                    server.Trace.Flow(TraceEventId.ClientConnecting, Convert.ToString(client.Client.RemoteEndPoint));
+                    HandleClientAsync(client);
+                }
+            }
+            catch (Exception e)
+            {
+                System.Diagnostics.Debug.WriteLine(e.ToString());
             }
         }
 
@@ -47,7 +54,7 @@ namespace Hub
                 try
                 {
                     DeviceClient client = new DeviceClient(server.Name, server.Trace.Sink);
-                    client.SetIdleTimeoutPolicy(10, true);
+                    client.SetIdleTimeoutPolicy(60, true);
                     client.WrapTcpClient(tcpClient, tlsInfo);
                     server.Trace.Detail(TraceEventId.HandshakeAsServerBegin);
                     var handshake = new DeviceHandshake(server.Trace);
@@ -59,8 +66,10 @@ namespace Hub
                         return;
                     }
                     server.Trace.Detail(TraceEventId.HandshakeAsServerSuccess);
+                    System.Diagnostics.Debug.WriteLine("!!");
                     server.Trace.Flow(TraceEventId.ClientConnected, client.RemoteName, client.RemoteDeviceId.ToString(), client.RemoteEndpoint.ToString());
-                    var handler = server.CreateDeviceClientHandler(client);
+                    System.Diagnostics.Debug.WriteLine("1!!");
+                    server.StartDeviceClientHandler(client);
                     return;
                 }
                 catch (Exception e)

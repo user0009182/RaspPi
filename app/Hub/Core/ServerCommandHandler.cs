@@ -73,7 +73,7 @@ namespace Hub
                 return;
             }
             var response = new ResponseMessage(request.RequestId, Encoding.ASCII.GetBytes(responseText));
-            responseClient.SendQueue.Add(response);
+            responseClient.Send(response);
         }
     }
 }

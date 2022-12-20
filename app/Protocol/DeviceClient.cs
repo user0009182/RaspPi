@@ -93,6 +93,18 @@ namespace Protocol
             
         }
 
+        public void Send(BaseMessage message)
+        {
+            handler.SendQueue.Add(message);
+        }
+
+        DeviceClientHandler handler;
+        public void StartHandler(Action<BaseMessage> onMessageReceived, Action<DeviceClient> onFailure)
+        {
+            handler = new DeviceClientHandler(this, onMessageReceived, onFailure, trace);
+            handler.Start();
+        }
+
         public DeviceClient(string localName, ITraceSink traceSink)
         {
             this.LocalName = localName;
@@ -154,6 +166,11 @@ namespace Protocol
 
         public void Close()
         {
+            if (handler != null)
+            {
+                handler.Shutdown();
+            }
+            
             if (sslStream != null)
             {
                 sslStream.Close();

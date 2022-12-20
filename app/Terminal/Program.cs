@@ -22,8 +22,6 @@ namespace Terminal
                 port = Convert.ToInt32(args[2]);
             }
             Task.Run(() => NetThreadProc(host, port));
-
-            
             Console.WriteLine($"connected to {host}:{port}");
             while (true)
             {
@@ -37,38 +35,38 @@ namespace Terminal
             }
         }
 
+        static uint nextRequestId = 0;
         static BlockingCollection<string> commands = new BlockingCollection<string>();
         static BlockingCollection<string> responses = new BlockingCollection<string>();
+        static BlockingCollection<ResponseMessage> responseMessages = new BlockingCollection<ResponseMessage>();
         static void NetThreadProc(string host, int port)
         {
             var device = new DeviceClient("Terminal", null);
             device.Connect(host, port, null, Guid.Empty);
-            while(true)
+            device.StartHandler(OnMessageRecieved, OnFailure);
+            while (true)
             {
                 string command;
                 if (!commands.TryTake(out command, 2000))
                 {
-                    var message = device.TryReadMessage(0);
-                    if (message != null && message.Type == DeviceProtocolMessageType.KeepAlive)
-                    {
-                        device.Writer.SendMessage(new KeepAliveMessage());
-                    }
                     continue;
                 }
                 if (command == "exit")
                     break;
                 var parts = command.Split(" ", StringSplitOptions.RemoveEmptyEntries);
+
+                nextRequestId++;
                 if (parts[0] == "send")
                 {
                     var targetDeviceName = parts[1];
-                    DoSend(device, targetDeviceName, parts.Skip(2));
+                    DoSend(device, nextRequestId, targetDeviceName, parts.Skip(2));
                 }
                 else
                 {
-                    device.Writer.SendMessage(new RequestMessage(1, null, device.RemoteDeviceId, Encoding.ASCII.GetBytes(command)));
+                    device.Writer.SendMessage(new RequestMessage(nextRequestId, null, device.RemoteDeviceId, Encoding.ASCII.GetBytes(command)));
                 }
                 
-                var response = ReadResponse(device);
+                var response = WaitForResponse(device, nextRequestId);
                 if (response == null)
                     continue;
                 var responseString = Encoding.ASCII.GetString(response.RequestData);
@@ -80,27 +78,34 @@ namespace Terminal
             }
         }
 
-        static ResponseMessage ReadResponse(DeviceClient device)
+        private static void OnFailure(DeviceClient message)
         {
-            //skip over any messages that aren't responses
-            while (true)
+            Console.Write("Failure");
+        }
+
+        private static void OnMessageRecieved(BaseMessage message)
+        {
+            if (message is ResponseMessage)
             {
-                var message = device.TryReadMessage(5000);
-                if (message == null)
-                    return null;
-                var responseMessage = message as ResponseMessage;
-                if (responseMessage != null)
-                    return responseMessage;
+                responseMessages.Add((ResponseMessage)message);
             }
         }
 
-        static uint requestId=0;
-        static void DoSend(DeviceClient device, string targetName, IEnumerable<string> commandParts)
+        static ResponseMessage WaitForResponse(DeviceClient device, uint requestId)
+        {
+            while (true)
+            {
+                var response = responseMessages.Take();
+                if (response.RequestId == requestId)
+                    return response;
+            }
+        }
+
+        static void DoSend(DeviceClient device, uint requestId, string targetName, IEnumerable<string> commandParts)
         {
             try
             {
                 var command = string.Join(' ', commandParts);
-                requestId++;
                 device.Writer.SendMessage(new RequestMessage(requestId, targetName, Guid.Empty, Encoding.ASCII.GetBytes(command)));
             }
             catch (Exception e)
