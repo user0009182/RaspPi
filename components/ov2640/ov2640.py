@@ -18,16 +18,17 @@ import gc
 import sys
 
 class ov2640(object):
-    def __init__(self, sclpin=9, sdapin=8, cspin=5, resolution=OV2640_320x240_JPEG):
+    #mosi = SPI RX
+    #miso = SPI TX
+    def __init__(self, sclpin=9, sdapin=8, cspin=5, sckpin=2, mosipin=3, misopin=4, resolution=OV2640_320x240_JPEG):
         self.sdapin=sdapin
         self.sclpin=sclpin
         self.cspin=cspin
         self.standby = False
-
         self.hspi = machine.SPI(0, baudrate=80000000, polarity=0, phase=0,
-        sck=machine.Pin(2),
-                  mosi=machine.Pin(3),
-                  miso=machine.Pin(4))
+        sck=machine.Pin(sckpin),
+                  mosi=machine.Pin(mosipin),
+                  miso=machine.Pin(misopin))
         self.i2c = machine.SoftI2C(scl=machine.Pin(sclpin), sda=machine.Pin(sdapin), freq=1000000)
     
         # first init spi assuming the hardware spi is connected
