@@ -58,6 +58,7 @@ namespace Hub
 
         public void Start()
         {
+            lastRemoteContact = DateTime.Now;
             Task.Run(() => RecvThread());
             Task.Run(() => SendThread());
         }

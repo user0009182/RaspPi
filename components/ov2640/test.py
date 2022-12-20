@@ -6,7 +6,8 @@ import sys
 
 try:
     print("initializing camera")
-    cam = ov2640.ov2640(resolution=ov2640.OV2640_320x240_JPEG)
+    #cam = ov2640.ov2640(resolution=ov2640.OV2640_320x240_JPEG)
+    cam = ov2640.ov2640(resolution=ov2640.OV2640_320x240_JPEG, sclpin=21, sdapin=20, cspin=17, sckpin=18, mosipin=19, misopin=16)
     #cam = ov2640.ov2640(resolution=ov2640.OV2640_1024x768_JPEG)
     print(gc.mem_free())
     output_filename="image9.jpg"
