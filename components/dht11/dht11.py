@@ -54,9 +54,9 @@ class Dht11:
     def __get_bits_from_intervals(self, data):
         bits=[]
         for i in range(0, 80, 2):
-            if data[i] < 35:
+            if data[i] < 38:
                 bits.append(0)
-            elif data[i] > 65:
+            elif data[i] > 63:
                 bits.append(1)
         return bits
     
