@@ -21,17 +21,17 @@
 
     void GetImage()
     {
-        responseText = DeviceClientService.SendStringCommand("camera", "get_image").Result;
+        responseText = DeviceClientService.SendStringCommand("camera", "get_image");
         imageData = Convert.FromBase64String(responseText);
     }
 
     void Turn1()
     {
-        responseText = DeviceClientService.SendStringCommand("camera", "turn 60 60").Result;
+        responseText = DeviceClientService.SendStringCommand("camera", "turn 60 60");
     }
 
     void Turn2()
     {
-        responseText = DeviceClientService.SendStringCommand("camera", "turn 90 60").Result;
+        responseText = DeviceClientService.SendStringCommand("camera", "turn 90 60");
     }
 }

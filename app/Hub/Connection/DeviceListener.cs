@@ -66,9 +66,7 @@ namespace Hub
                         return;
                     }
                     server.Trace.Detail(TraceEventId.HandshakeAsServerSuccess);
-                    System.Diagnostics.Debug.WriteLine("!!");
                     server.Trace.Flow(TraceEventId.ClientConnected, client.RemoteName, client.RemoteDeviceId.ToString(), client.RemoteEndpoint.ToString());
-                    System.Diagnostics.Debug.WriteLine("1!!");
                     server.StartDeviceClientHandler(client);
                     return;
                 }

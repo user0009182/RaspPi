@@ -146,22 +146,17 @@ namespace Protocol
             reader = new DeviceProtocolReader(new BinaryReader(stream));
         }
 
-        public string SendStringRequest(string request)
+        public void SendStringRequest(string request)
         {
-            return SendStringRequest(null, request);
+            SendStringRequest(null, request);
         }
 
-        public string SendStringRequest(string target, string request)
+        public void SendStringRequest(string target, string request)
         {
             Guid targetGuid = Guid.Empty;
             if (target == null)
                 targetGuid = RemoteDeviceId;
             Writer.SendMessage(new RequestMessage(1, target, targetGuid, System.Text.Encoding.ASCII.GetBytes(request)));
-            var response = Reader.ReceiveMessage() as ResponseMessage;
-            if (response == null)
-                return null;
-            var responseText = System.Text.Encoding.ASCII.GetString(response.RequestData);
-            return responseText;
         }
 
         public void Close()
